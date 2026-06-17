@@ -388,10 +388,8 @@
     badge.className = 'loading';
 
     try {
-      const proxy = 'https://api.allorigins.win/get?url=';
-      const res  = await fetch(proxy + encodeURIComponent(API_URL));
-      const data = await res.json();
-      const json = JSON.parse(data.contents);
+      const res  = await fetch('./data.json');
+      const json = await res.json();
 
       dadosCompletos = json.filter(d => d['Placa']);
       popularFiltros(dadosCompletos);
