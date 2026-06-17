@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Frota de Veículos</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      background: #f0f2f5;
+      color: #1a1a2e;
+      min-height: 100vh;
+    }
+
+    /* ── LOGIN ── */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: #f0f2f5;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+    }
+    #login-box {
+      background: white;
+      border-radius: 14px;
+      padding: 2.5rem 2rem;
+      width: 340px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.10);
+      text-align: center;
+    }
+    #login-box h2 { font-size: 1.15rem; color: #1a1a2e; margin-bottom: 0.3rem; }
+    #login-box p.sub { font-size: 0.8rem; color: #999; margin-bottom: 1.5rem; }
+    #login-box input {
+      width: 100%; height: 42px;
+      border: 1px solid #ddd; border-radius: 8px;
+      padding: 0 14px; font-size: 0.9rem;
+      margin-bottom: 10px; outline: none;
+      transition: border-color 0.15s;
+    }
+    #login-box input:focus { border-color: #1a1a2e; }
+    #login-box button {
+      width: 100%; height: 42px;
+      background: #1a1a2e; color: white;
+      border: none; border-radius: 8px;
+      font-size: 0.9rem; font-weight: 600;
+      cursor: pointer; margin-top: 4px;
+      transition: opacity 0.15s;
+    }
+    #login-box button:hover { opacity: 0.85; }
+    #login-erro { font-size: 0.8rem; color: #c62828; margin-top: 10px; min-height: 18px; }
+    #login-loading { font-size: 0.8rem; color: #888; margin-top: 10px; min-height: 18px; }
+
+    /* ── ADMIN OVERLAY ── */
+    #admin-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1500;
+    }
+    #admin-overlay.aberto { display: flex; }
+    #admin-box {
+      background: white;
+      border-radius: 14px;
+      width: 560px;
+      max-width: 95vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: 1.5rem;
+      box-shadow: 0 8px 40px rgba(0,0,0,0.2);
+    }
+    #admin-box h2 { font-size: 1.1rem; margin-bottom: 1.25rem; color: #1a1a2e; }
+    .admin-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 1.25rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .admin-form input, .admin-form select {
+      height: 36px; border: 1px solid #ddd; border-radius: 8px;
+      padding: 0 10px; font-size: 0.82rem; outline: none;
+    }
+    .admin-form input:focus, .admin-form select:focus { border-color: #1a1a2e; }
+    .btn-add {
+      height: 36px; padding: 0 14px;
+      background: #1a1a2e; color: white;
+      border: none; border-radius: 8px;
+      font-size: 0.82rem; cursor: pointer; white-space: nowrap;
+    }
+    .btn-add:hover { opacity: 0.85; }
+    .admin-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    .admin-table th {
+      text-align: left; padding: 8px 10px;
+      font-size: 0.72rem; color: #888; text-transform: uppercase;
+      border-bottom: 1px solid #f0f0f0;
+    }
+    .admin-table td { padding: 10px 10px; border-bottom: 1px solid #f5f5f5; }
+    .btn-del {
+      height: 28px; padding: 0 10px;
+      background: #ffebee; color: #c62828;
+      border: none; border-radius: 6px;
+      font-size: 0.75rem; cursor: pointer;
+    }
+    .btn-reset {
+      height: 28px; padding: 0 10px;
+      background: #fff3e0; color: #e65100;
+      border: none; border-radius: 6px;
+      font-size: 0.75rem; cursor: pointer;
+      margin-right: 4px;
+    }
+    #admin-msg { font-size: 0.8rem; margin-top: 10px; min-height: 18px; }
+    #admin-msg.ok { color: #2e7d32; }
+    #admin-msg.err { color: #c62828; }
+    .admin-footer {
+      display: flex; justify-content: flex-end;
+      margin-top: 1rem; padding-top: 1rem;
+      border-top: 1px solid #f0f0f0;
+    }
+    .badge-admin { font-size: 0.7rem; padding: 2px 8px; border-radius: 10px; background: #e3f2fd; color: #1565c0; }
+
+    /* ── TOPO ── */
+    .topbar {
+      background: #1a1a2e;
+      color: white;
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .topbar h1 { font-size: 1.1rem; font-weight: 600; letter-spacing: 0.02em; }
+    .topbar-meta { font-size: 0.75rem; opacity: 0.6; margin-top: 2px; }
+    .topbar-right { display: flex; align-items: center; gap: 10px; }
+    #badge-status {
+      font-size: 0.75rem; padding: 4px 12px;
+      border-radius: 20px; background: rgba(255,255,255,0.15);
+      color: white; white-space: nowrap;
+    }
+    #badge-status.ok      { background: #2e7d32; }
+    #badge-status.loading { background: #f57f17; }
+    #badge-status.error   { background: #c62828; }
+    .btn-topbar {
+      height: 30px; padding: 0 12px;
+      border-radius: 6px; font-size: 0.75rem;
+      cursor: pointer; border: none; white-space: nowrap;
+    }
+    #btn-admin  { background: #f57f17; color: white; }
+    #btn-logout { background: rgba(255,255,255,0.15); color: white; }
+    #usuario-logado { font-size: 0.75rem; opacity: 0.7; }
+
+    /* ── CARDS RESUMO ── */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      padding: 1.25rem 1.5rem;
+    }
+    .stat-card {
+      background: white; border-radius: 10px;
+      padding: 1rem 1.25rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    }
+    .stat-card .label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
+    .stat-card.total .value { color: #1a1a2e; }
+    .stat-card.green .value { color: #2e7d32; }
+    .stat-card.blue  .value { color: #1565c0; }
+    .stat-card.amber .value { color: #e65100; }
+
+    /* ── TOOLBAR ── */
+    .toolbar { display: flex; gap: 10px; padding: 0 1.5rem 1rem; flex-wrap: wrap; }
+    .toolbar input, .toolbar select {
+      height: 38px; border: 1px solid #ddd; border-radius: 8px;
+      padding: 0 12px; font-size: 0.85rem;
+      background: white; color: #1a1a2e; outline: none;
+      transition: border-color 0.15s;
+    }
+    .toolbar input { flex: 1; min-width: 200px; }
+    .toolbar input:focus, .toolbar select:focus { border-color: #1a1a2e; }
+
+    /* ── TABELA ── */
+    .table-wrap { padding: 0 1.5rem 2rem; overflow-x: auto; }
+    table {
+      width: 100%; border-collapse: collapse;
+      background: white; border-radius: 10px; overflow: hidden;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.07); min-width: 640px;
+    }
+    thead tr { background: #1a1a2e; color: white; }
+    thead th {
+      padding: 0.75rem 1rem; text-align: left;
+      font-size: 0.75rem; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap;
+    }
+    tbody tr { border-bottom: 1px solid #f0f0f0; cursor: pointer; transition: background 0.1s; }
+    tbody tr:last-child { border-bottom: none; }
+    tbody tr:hover { background: #f5f7ff; }
+    tbody tr.expanded { background: #eef2ff; }
+    tbody td { padding: 0.75rem 1rem; font-size: 0.85rem; vertical-align: middle; }
+    .placa { font-family: 'Courier New', monospace; font-weight: 700; font-size: 0.85rem; letter-spacing: 0.05em; }
+
+    .badge { display: inline-block; font-size: 0.72rem; font-weight: 600; padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+    .badge-green { background: #e8f5e9; color: #2e7d32; }
+    .badge-blue  { background: #e3f2fd; color: #1565c0; }
+    .badge-amber { background: #fff3e0; color: #e65100; }
+    .badge-red   { background: #ffebee; color: #c62828; }
+    .badge-gray  { background: #f5f5f5; color: #555; }
+
+    .detail-row td { padding: 0; cursor: default; }
+    .detail-row:hover { background: white !important; }
+    .detail-panel { padding: 1rem 1.25rem 1.25rem; background: #f8f9ff; border-top: 1px solid #e0e4ff; border-bottom: 1px solid #e0e4ff; }
+    .detail-panel h3 { font-size: 0.8rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; }
+    .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; }
+    .detail-field .field-label { font-size: 0.7rem; color: #999; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 2px; }
+    .detail-field .field-value { font-size: 0.88rem; font-weight: 600; color: #1a1a2e; }
+    .field-value.mono { font-family: 'Courier New', monospace; font-size: 0.78rem; font-weight: 500; }
+
+    .icon-expand {
+      width: 22px; height: 22px; border-radius: 50%;
+      border: 1px solid #ccc; display: inline-flex;
+      align-items: center; justify-content: center;
+      font-size: 0.75rem; color: #888;
+      transition: transform 0.2s, background 0.1s;
+    }
+    tr.expanded .icon-expand { transform: rotate(180deg); background: #1a1a2e; color: white; border-color: #1a1a2e; }
+
+    .empty-msg { text-align: center; padding: 3rem 1rem; color: #aaa; font-size: 0.9rem; }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ── -->
+<div id="login-overlay">
+  <div id="login-box">
+    <h2>&#128663; Frota de Veículos</h2>
+    <p class="sub">Digite suas credenciais para continuar</p>
+    <input type="text" id="login-user" placeholder="Usuário" autocomplete="username">
+    <input type="password" id="login-pass" placeholder="Senha" autocomplete="current-password"
+      onkeydown="if(event.key==='Enter') fazerLogin()">
+    <button onclick="fazerLogin()">Entrar</button>
+    <div id="login-loading"></div>
+    <div id="login-erro"></div>
+  </div>
+</div>
+
+<!-- ── PAINEL ADMIN ── -->
+<div id="admin-overlay">
+  <div id="admin-box">
+    <h2>&#128100; Gerenciar Usuários</h2>
+    <div class="admin-form">
+      <input type="text" id="novo-usuario" placeholder="Usuário">
+      <input type="password" id="nova-senha" placeholder="Senha">
+      <select id="novo-admin">
+        <option value="false">Padrão</option>
+        <option value="true">Admin</option>
+      </select>
+      <button class="btn-add" onclick="adicionarUsuario()">+ Adicionar</button>
+    </div>
+    <table class="admin-table">
+      <thead>
+        <tr>
+          <th>Usuário</th>
+          <th>Perfil</th>
+          <th>Ações</th>
+        </tr>
+      </thead>
+      <tbody id="admin-tbody">
+        <tr><td colspan="3" style="text-align:center;color:#aaa;padding:1rem">Carregando...</td></tr>
+      </tbody>
+    </table>
+    <div id="admin-msg"></div>
+    <div class="admin-footer">
+      <button class="btn-topbar btn-reset" style="height:34px;font-size:0.82rem" onclick="fecharAdmin()">Fechar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TOPO ── -->
+<div class="topbar">
+  <div>
+    <h1>&#128663; Frota de Veículos</h1>
+    <div class="topbar-meta" id="ultima-atualizacao">Carregando...</div>
+  </div>
+  <div class="topbar-right">
+    <span id="usuario-logado"></span>
+    <button class="btn-topbar" id="btn-admin" onclick="abrirAdmin()" style="display:none">&#9881; Admin</button>
+    <span id="badge-status" class="loading">Carregando...</span>
+    <button class="btn-topbar" id="btn-logout" onclick="fazerLogout()">Sair</button>
+  </div>
+</div>
+
+<!-- ── CARDS RESUMO ── -->
+<div class="stats-row">
+  <div class="stat-card total"><div class="label">Total</div><div class="value" id="stat-total">—</div></div>
+  <div class="stat-card green"><div class="label">Alugados</div><div class="value" id="stat-alugado">—</div></div>
+  <div class="stat-card blue"><div class="label">Disponíveis</div><div class="value" id="stat-disponivel">—</div></div>
+  <div class="stat-card amber"><div class="label">Manutenção</div><div class="value" id="stat-manutencao">—</div></div>
+</div>
+
+<!-- ── TOOLBAR ── -->
+<div class="toolbar">
+  <input type="text" id="busca" placeholder="Buscar por placa, motorista ou modelo...">
+  <select id="filtro-status"><option value="">Todos os status</option></select>
+  <select id="filtro-fabricante"><option value="">Todos os fabricantes</option></select>
+  <button onclick="exportarXLSX()" style="height:38px;padding:0 16px;border:1px solid #1a1a2e;border-radius:8px;background:#1a1a2e;color:white;font-size:0.85rem;cursor:pointer;white-space:nowrap;">
+    &#11015; Exportar Excel
+  </button>
+</div>
+
+<!-- ── TABELA ── -->
+<div class="table-wrap">
+  <table id="tabela">
+    <thead>
+      <tr>
+        <th>Placa</th><th>Modelo</th><th>Fabricante</th>
+        <th>Cor</th><th>Motorista</th><th>Status</th>
+        <th style="width:40px"></th>
+      </tr>
+    </thead>
+    <tbody id="tbody">
+      <tr><td colspan="7" class="empty-msg">Faça login para ver os dados.</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script>
+  const AUTH_URL = 'https://script.google.com/macros/s/AKfycbwMg9ud1SN-7uMeaXe1amAljaFc6eHL04xbBNxG43HBsHkYsNZKdYYbgsvmhK48igmo/exec';
+  const INTERVALO_HORAS = 4;
+
+  let dadosCompletos = [];
+  let expandidoIndex = null;
+  let sessao = null;
+
+  /* ── JSONP helper ── */
+  function apiFetch(params) {
+    return new Promise((resolve, reject) => {
+      const cbName = '_cb_' + Date.now() + '_' + Math.random().toString(36).slice(2);
+      const qs = Object.entries(params).map(([k,v]) => `${encodeURIComponent(k)}=${encodeURIComponent(v)}`).join('&');
+      window[cbName] = data => { delete window[cbName]; document.head.removeChild(s); resolve(data); };
+      const s = document.createElement('script');
+      s.src = AUTH_URL + '?' + qs + '&callback=' + cbName;
+      s.onerror = () => { delete window[cbName]; document.head.removeChild(s); reject(new Error('Erro de rede')); };
+      document.head.appendChild(s);
+    });
+  }
+
+  /* ── AUTH ── */
+  async function fazerLogin() {
+    const user = document.getElementById('login-user').value.trim();
+    const pass = document.getElementById('login-pass').value;
+    const erro = document.getElementById('login-erro');
+    const loading = document.getElementById('login-loading');
+    erro.textContent = '';
+    if (!user || !pass) { erro.textContent = 'Preencha usuário e senha.'; return; }
+    loading.textContent = 'Verificando...';
+    try {
+      const res = await apiFetch({ action: 'login', u: user, p: pass });
+      loading.textContent = '';
+      if (res.ok) {
+        sessao = { token: res.token, admin: res.admin, usuario: res.usuario };
+        sessionStorage.setItem('sessao', JSON.stringify(sessao));
+        mostrarApp();
+      } else {
+        erro.textContent = res.msg || 'Erro ao fazer login.';
+      }
+    } catch(e) {
+      loading.textContent = '';
+      erro.textContent = 'Não foi possível conectar. Tente novamente.';
+    }
+  }
+
+  function fazerLogout() {
+    sessionStorage.removeItem('sessao');
+    sessao = null;
+    document.getElementById('login-overlay').style.display = 'flex';
+    document.getElementById('login-user').value = '';
+    document.getElementById('login-pass').value = '';
+    document.getElementById('login-erro').textContent = '';
+  }
+
+  function mostrarApp() {
+    document.getElementById('login-overlay').style.display = 'none';
+    document.getElementById('usuario-logado').textContent = sessao.usuario;
+    if (sessao.admin) document.getElementById('btn-admin').style.display = 'inline-block';
+    carregarDados();
+  }
+
+  function checkAuth() {
+    const s = sessionStorage.getItem('sessao');
+    if (s) {
+      sessao = JSON.parse(s);
+      mostrarApp();
+    }
+  }
+
+  /* ── PAINEL ADMIN ── */
+  async function abrirAdmin() {
+    document.getElementById('admin-overlay').classList.add('aberto');
+    document.getElementById('admin-msg').textContent = '';
+    await recarregarUsuarios();
+  }
+
+  function fecharAdmin() {
+    document.getElementById('admin-overlay').classList.remove('aberto');
+  }
+
+  async function recarregarUsuarios() {
+    const tbody = document.getElementById('admin-tbody');
+    tbody.innerHTML = '<tr><td colspan="3" style="text-align:center;color:#aaa;padding:1rem">Carregando...</td></tr>';
+    try {
+      const res = await apiFetch({ action: 'usuarios', token: sessao.token });
+      if (!res.ok) { tbody.innerHTML = `<tr><td colspan="3" style="color:#c62828;padding:1rem">${res.msg}</td></tr>`; return; }
+      tbody.innerHTML = res.usuarios.map(u => `
+        <tr>
+          <td>${u.usuario}</td>
+          <td>${u.isAdmin ? '<span class="badge-admin">Admin</span>' : 'Padrão'}</td>
+          <td>
+            <button class="btn-reset" onclick="redefinirSenha('${u.usuario}')">Redefinir senha</button>
+            <button class="btn-del" onclick="excluirUsuario('${u.usuario}')">Excluir</button>
+          </td>
+        </tr>`).join('');
+    } catch(e) {
+      tbody.innerHTML = '<tr><td colspan="3" style="color:#c62828;padding:1rem">Erro ao carregar usuários.</td></tr>';
+    }
+  }
+
+  async function adicionarUsuario() {
+    const u = document.getElementById('novo-usuario').value.trim();
+    const p = document.getElementById('nova-senha').value;
+    const admin = document.getElementById('novo-admin').value;
+    const msg = document.getElementById('admin-msg');
+    if (!u || !p) { msg.textContent = 'Preencha usuário e senha.'; msg.className = 'err'; return; }
+    try {
+      const res = await apiFetch({ action: 'addUser', token: sessao.token, u, p, admin });
+      msg.textContent = res.ok ? 'Usuário criado com sucesso.' : res.msg;
+      msg.className = res.ok ? 'ok' : 'err';
+      if (res.ok) {
+        document.getElementById('novo-usuario').value = '';
+        document.getElementById('nova-senha').value = '';
+        await recarregarUsuarios();
+      }
+    } catch(e) { msg.textContent = 'Erro de conexão.'; msg.className = 'err'; }
+  }
+
+  async function excluirUsuario(usuario) {
+    if (!confirm(`Excluir o usuário "${usuario}"?`)) return;
+    const msg = document.getElementById('admin-msg');
+    try {
+      const res = await apiFetch({ action: 'delUser', token: sessao.token, u: usuario });
+      msg.textContent = res.ok ? 'Usuário excluído.' : res.msg;
+      msg.className = res.ok ? 'ok' : 'err';
+      if (res.ok) await recarregarUsuarios();
+    } catch(e) { msg.textContent = 'Erro de conexão.'; msg.className = 'err'; }
+  }
+
+  async function redefinirSenha(usuario) {
+    const nova = prompt(`Nova senha para "${usuario}":`);
+    if (!nova) return;
+    const msg = document.getElementById('admin-msg');
+    try {
+      const res = await apiFetch({ action: 'resetPass', token: sessao.token, u: usuario, p: nova });
+      msg.textContent = res.ok ? 'Senha redefinida com sucesso.' : res.msg;
+      msg.className = res.ok ? 'ok' : 'err';
+    } catch(e) { msg.textContent = 'Erro de conexão.'; msg.className = 'err'; }
+  }
+
+  /* ── DADOS ── */
+  function badgeStatus(status) {
+    if (!status) return `<span class="badge badge-gray">—</span>`;
+    const s = status.toLowerCase();
+    if (s.includes('alugado'))   return `<span class="badge badge-green">${status}</span>`;
+    if (s.includes('disponív'))  return `<span class="badge badge-blue">${status}</span>`;
+    if (s.includes('manuten'))   return `<span class="badge badge-amber">${status}</span>`;
+    if (s.includes('sinistro') || s.includes('baixa')) return `<span class="badge badge-red">${status}</span>`;
+    return `<span class="badge badge-gray">${status}</span>`;
+  }
+
+  function popularFiltros(dados) {
+    const statuses   = [...new Set(dados.map(d => d['Status']).filter(Boolean))].sort();
+    const fabricantes = [...new Set(dados.map(d => d['Fabricante']).filter(Boolean))].sort();
+    const selS = document.getElementById('filtro-status');
+    const selF = document.getElementById('filtro-fabricante');
+    const cs = selS.value, cf = selF.value;
+    selS.innerHTML = '<option value="">Todos os status</option>';
+    selF.innerHTML = '<option value="">Todos os fabricantes</option>';
+    statuses.forEach(s   => selS.innerHTML += `<option value="${s}">${s}</option>`);
+    fabricantes.forEach(f => selF.innerHTML += `<option value="${f}">${f}</option>`);
+    selS.value = cs; selF.value = cf;
+  }
+
+  function atualizarStats(dados) {
+    document.getElementById('stat-total').textContent      = dados.length;
+    document.getElementById('stat-alugado').textContent    = dados.filter(d => (d['Status']||'').toLowerCase().includes('alugado')).length;
+    document.getElementById('stat-disponivel').textContent = dados.filter(d => (d['Status']||'').toLowerCase().includes('disponív')).length;
+    document.getElementById('stat-manutencao').textContent = dados.filter(d => (d['Status']||'').toLowerCase().includes('manuten')).length;
+  }
+
+  function dadosFiltrados() {
+    const busca = document.getElementById('busca').value.toLowerCase();
+    const status = document.getElementById('filtro-status').value;
+    const fabricante = document.getElementById('filtro-fabricante').value;
+    return dadosCompletos.filter(d => {
+      const mb = !busca || (d['Placa']||'').toLowerCase().includes(busca) ||
+        (d['Nome do motorista']||'').toLowerCase().includes(busca) ||
+        (d['Modelo']||'').toLowerCase().includes(busca);
+      return mb && (!status || d['Status'] === status) && (!fabricante || d['Fabricante'] === fabricante);
+    });
+  }
+
+  function renderTabela() {
+    const dados = dadosFiltrados();
+    const tbody = document.getElementById('tbody');
+    if (!dados.length) { tbody.innerHTML = '<tr><td colspan="7" class="empty-msg">Nenhum veículo encontrado.</td></tr>'; return; }
+    let html = '';
+    dados.forEach((d, i) => {
+      const exp = expandidoIndex === i;
+      html += `<tr data-index="${i}" class="${exp ? 'expanded' : ''}" onclick="toggleDetalhe(${i})">
+        <td><span class="placa">${d['Placa']||'—'}</span></td>
+        <td>${d['Modelo']||'—'}</td><td>${d['Fabricante']||'—'}</td>
+        <td>${d['Cor']||'—'}</td><td>${d['Nome do motorista']||'—'}</td>
+        <td>${badgeStatus(d['Status'])}</td>
+        <td><span class="icon-expand">${exp?'▲':'▼'}</span></td></tr>`;
+      if (exp) html += `<tr class="detail-row"><td colspan="7"><div class="detail-panel">
+        <h3>Informações do veículo</h3><div class="detail-grid">
+        <div class="detail-field"><div class="field-label">Placa</div><div class="field-value mono">${d['Placa']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Chassi</div><div class="field-value mono">${d['Chassi']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Renavam</div><div class="field-value mono">${d['Renavam']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Fabricante</div><div class="field-value">${d['Fabricante']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Modelo</div><div class="field-value">${d['Modelo']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Cor</div><div class="field-value">${d['Cor']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Ano Veículo</div><div class="field-value">${d['Ano Veículo']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Ano Modelo</div><div class="field-value">${d['Ano Modelo']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Motorista</div><div class="field-value">${d['Nome do motorista']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">CPF</div><div class="field-value mono">${d['CPF']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Telefone</div><div class="field-value mono">${d['Telefone']||'—'}</div></div>
+        <div class="detail-field"><div class="field-label">Status</div><div class="field-value">${badgeStatus(d['Status'])}</div></div>
+        </div></div></td></tr>`;
+    });
+    tbody.innerHTML = html;
+  }
+
+  function toggleDetalhe(index) {
+    expandidoIndex = expandidoIndex === index ? null : index;
+    renderTabela();
+  }
+
+  function exportarXLSX() {
+    if (!dadosCompletos.length) return alert('Nenhum dado carregado.');
+    const substatusMap = {
+      'alugado':'EM CONTRATO','oficina':'EM MANUTENÇÃO','atribuído':'RESERVADO',
+      'disponível':'DISPONÍVEL LOCAÇÃO','em preparação':'VISTORIA VEICULAR','perda total':'VENDIDO'
+    };
+    const linhas = dadosCompletos.map(d => {
+      const status = d['Status'] || '';
+      return {
+        'PLACA': d['Placa']||'', 'CHASSI': d['Chassi']||'', 'MODELO': d['Modelo']||'',
+        'FABRICANTE': d['Fabricante']||'', 'KM ATUAL': '', 'COR': d['Cor']||'',
+        'RENAVAM': d['Renavam']||'', 'ANO VEÍCULO': d['Ano Veículo']||'',
+        'ANO MODELO': d['Ano Modelo']||'', 'TELEFONE': d['Telefone']||'',
+        'LOCATÁRIO': d['Nome do motorista']||'', 'CPF': d['CPF']||'',
+        'PROPRIETÁRIO': 'LM FROTAS', 'OPERAÇÃO': 'OPERAÇÃO', 'STATUS': status,
+        'OBSERVAÇÃO DO STATUS': '', 'SUBSTATUS': substatusMap[status.toLowerCase()]||'',
+        'INÍCIO STATUS ATUAL': '', 'RASTREADOR': 'SMARTGPS'
+      };
+    });
+    const ws = XLSX.utils.json_to_sheet(linhas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Frota');
+    const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '.');
+    XLSX.writeFile(wb, `(${hoje}) FROTA_STATUS DIÁRIA OCN BRASIL.xlsx`);
+  }
+
+  async function carregarDados() {
+    const badge = document.getElementById('badge-status');
+    badge.textContent = 'Atualizando...'; badge.className = 'loading';
+    try {
+      const res  = await fetch('./data.json');
+      const json = await res.json();
+      dadosCompletos = json.filter(d => d['Placa']);
+      popularFiltros(dadosCompletos);
+      atualizarStats(dadosCompletos);
+      renderTabela();
+      const agora = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      document.getElementById('ultima-atualizacao').textContent = `Última atualização: ${agora}`;
+      badge.textContent = 'Atualizado ✓'; badge.className = 'ok';
+    } catch (err) {
+      badge.textContent = 'Erro ao carregar'; badge.className = 'error';
+    }
+  }
+
+  document.getElementById('busca').addEventListener('input', () => { expandidoIndex = null; renderTabela(); });
+  document.getElementById('filtro-status').addEventListener('change', () => { expandidoIndex = null; renderTabela(); });
+  document.getElementById('filtro-fabricante').addEventListener('change', () => { expandidoIndex = null; renderTabela(); });
+
+  checkAuth();
+  setInterval(() => { if (sessao) carregarDados(); }, INTERVALO_HORAS * 60 * 60 * 1000);
+</script>
+</body>
+</html>
