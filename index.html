@@ -247,6 +247,9 @@
   <select id="filtro-fabricante">
     <option value="">Todos os fabricantes</option>
   </select>
+  <button id="btn-exportar" onclick="exportarXLSX()" style="height:38px;padding:0 16px;border:1px solid #1a1a2e;border-radius:8px;background:#1a1a2e;color:white;font-size:0.85rem;cursor:pointer;white-space:nowrap;">
+    &#11015; Exportar Excel
+  </button>
 </div>
 
 <!-- TABELA -->
@@ -269,6 +272,7 @@
   </table>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 <script>
   const API_URL = 'https://script.google.com/macros/s/AKfycbx9LxEgTKrKBwk28VUWV0kS5GeiR5Sl-nPdbgnDyI6Adthb_HwkatK3SPEku_48GFwL/exec';
   const INTERVALO_HORAS = 4;
@@ -366,6 +370,8 @@
                 <div class="detail-field"><div class="field-label">Ano Veículo</div><div class="field-value">${d['Ano Veículo'] || '—'}</div></div>
                 <div class="detail-field"><div class="field-label">Ano Modelo</div><div class="field-value">${d['Ano Modelo'] || '—'}</div></div>
                 <div class="detail-field"><div class="field-label">Motorista</div><div class="field-value">${d['Nome do motorista'] || '—'}</div></div>
+                <div class="detail-field"><div class="field-label">CPF</div><div class="field-value mono">${d['CPF'] || '—'}</div></div>
+                <div class="detail-field"><div class="field-label">Telefone</div><div class="field-value mono">${d['Telefone'] || '—'}</div></div>
                 <div class="detail-field"><div class="field-label">Status</div><div class="field-value">${badgeStatus(d['Status'])}</div></div>
               </div>
             </div>
@@ -380,6 +386,52 @@
   function toggleDetalhe(index) {
     expandidoIndex = expandidoIndex === index ? null : index;
     renderTabela();
+  }
+
+  function exportarXLSX() {
+    if (!dadosCompletos.length) return alert('Nenhum dado carregado para exportar.');
+
+    const substatusMap = {
+      'alugado':        'EM CONTRATO',
+      'oficina':        'EM MANUTENÇÃO',
+      'atribuído':      'RESERVADO',
+      'disponível':     'DISPONÍVEL LOCAÇÃO',
+      'em preparação':  'VISTORIA VEICULAR',
+      'perda total':    'VENDIDO'
+    };
+
+    const linhas = dadosCompletos.map(d => {
+      const status = d['Status'] || '';
+      const substatus = substatusMap[(status).toLowerCase()] || '';
+      return {
+        'PLACA':                  d['Placa']              || '',
+        'CHASSI':                 d['Chassi']             || '',
+        'MODELO':                 d['Modelo']             || '',
+        'FABRICANTE':             d['Fabricante']         || '',
+        'KM ATUAL':               '',
+        'COR':                    d['Cor']                || '',
+        'RENAVAM':                d['Renavam']            || '',
+        'ANO VEÍCULO':            d['Ano Veículo']        || '',
+        'ANO MODELO':             d['Ano Modelo']         || '',
+        'TELEFONE':               d['Telefone']           || '',
+        'LOCATÁRIO':              d['Nome do motorista']  || '',
+        'CPF':                    d['CPF']                || '',
+        'PROPRIETÁRIO':           'LM FROTAS',
+        'OPERAÇÃO':               'OPERAÇÃO',
+        'STATUS':                 status,
+        'OBSERVAÇÃO DO STATUS':   '',
+        'SUBSTATUS':              substatus,
+        'INÍCIO STATUS ATUAL':    '',
+        'RASTREADOR':             'SMARTGPS'
+      };
+    });
+
+    const ws = XLSX.utils.json_to_sheet(linhas);
+    const wb = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(wb, ws, 'Frota');
+
+    const hoje = new Date().toLocaleDateString('pt-BR').replace(/\//g, '.');
+    XLSX.writeFile(wb, `(${hoje}) FROTA_STATUS DIÁRIA OCN BRASIL.xlsx`);
   }
 
   async function carregarDados() {
