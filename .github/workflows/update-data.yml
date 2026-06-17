@@ -1,0 +1,24 @@
+name: Atualizar dados da frota
+
+on:
+  schedule:
+    - cron: '0 */4 * * *'
+  workflow_dispatch:
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Buscar dados do Apps Script
+        run: |
+          curl -L "https://script.google.com/macros/s/AKfycbwMg9ud1SN-7uMeaXe1amAljaFc6eHL04xbBNxG43HBsHkYsNZKdYYbgsvmhK48igmo/exec" -o data.json
+
+      - name: Salvar no repositório
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add data.json
+          git diff --staged --quiet || git commit -m "Atualizar dados da frota"
+          git push
