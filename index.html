@@ -140,7 +140,7 @@
       box-shadow: 0 4px 16px rgba(90,0,248,0.25);
     }
     .header-brand { display: flex; align-items: center; gap: 14px; }
-    .header-logo { height: 48px; filter: brightness(0) invert(1); }
+    .header-logo { height: 48px; background: white; border-radius: 8px; padding: 4px; }
     .header-title h1 { font-size: 1.2rem; font-weight: 700; margin: 0; }
     .header-title p { font-size: 0.78rem; opacity: 0.75; margin: 2px 0 0; }
     .topbar-meta { font-size: 0.75rem; opacity: 0.6; margin-top: 2px; }
@@ -300,6 +300,7 @@
     <div class="header-title">
       <h1>OCN Frota</h1>
       <p>Plataforma do time de frota — monitoramento e gestão</p>
+      <div class="topbar-meta" id="ultima-atualizacao" style="display:none"></div>
     </div>
   </div>
   <div class="topbar-right">
@@ -307,6 +308,7 @@
       <div class="header-user-name" id="usuario-logado"></div>
       <div class="header-user-role" id="usuario-role">Colaborador</div>
     </div>
+    <span id="badge-status" class="loading" style="display:none">Carregando...</span>
     <button class="btn-topbar" id="btn-admin" onclick="abrirAdmin()" style="display:none">&#9881; Admin</button>
     <button class="btn-topbar" id="btn-logout" onclick="fazerLogout()">Sair</button>
   </div>
