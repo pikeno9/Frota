@@ -180,9 +180,9 @@
     .stat-card .label { font-size: 0.72rem; color: #888; text-transform: uppercase; letter-spacing: 0.05em; }
     .stat-card .value { font-size: 1.8rem; font-weight: 700; margin-top: 4px; }
     .stat-card.total .value { color: #282728; }
-    .stat-card.green .value { color: #2e7d32; }
-    .stat-card.blue  .value { color: #1565c0; }
-    .stat-card.amber .value { color: #e65100; }
+    .stat-card.green .value { color: #c62828; }
+    .stat-card.blue  .value { color: #2e7d32; }
+    .stat-card.amber .value { color: #5A00F8; }
 
     /* ── TOOLBAR ── */
     .toolbar { display: flex; gap: 10px; padding: 0 1.5rem 1rem; flex-wrap: wrap; }
@@ -222,6 +222,7 @@
     .badge-red    { background: #ffebee; color: #c62828; }
     .badge-purple { background: #ede7f6; color: #5A00F8; }
     .badge-gray   { background: #f5f5f5; color: #555; }
+    .badge-black  { background: #222; color: #fff; }
 
     .detail-row td { padding: 0; cursor: default; }
     .detail-row:hover { background: white !important; }
@@ -501,7 +502,8 @@
     if (s.includes('oficina'))                         return `<span class="badge badge-purple">${status}</span>`;
     if (s.includes('prepara'))                         return `<span class="badge badge-amber">${status}</span>`;
     if (s.includes('atribuí'))                         return `<span class="badge badge-blue">${status}</span>`;
-    if (s.includes('sinistro') || s.includes('perda')) return `<span class="badge badge-red">${status}</span>`;
+    if (s.includes('sinistro'))                         return `<span class="badge badge-red">${status}</span>`;
+    if (s.includes('perda'))                           return `<span class="badge badge-black">${status}</span>`;
     return `<span class="badge badge-gray">${status}</span>`;
   }
 
@@ -580,7 +582,7 @@
       'alugado':'EM CONTRATO','oficina':'EM MANUTENÇÃO','atribuído':'RESERVADO',
       'disponível':'DISPONÍVEL LOCAÇÃO','em preparação':'VISTORIA VEICULAR','perda total':'VENDIDO'
     };
-    const linhas = dadosCompletos.map(d => {
+    const linhas = dadosCompletos.filter(d => !(d['Status']||'').toLowerCase().includes('perda')).map(d => {
       const status = d['Status'] || '';
       return {
         'PLACA': d['Placa']||'', 'CHASSI': d['Chassi']||'', 'MODELO': d['Modelo']||'',
