@@ -608,10 +608,24 @@
 
   async function atualizarDados() {
     const btn = document.getElementById('btn-refresh');
+    const badge = document.getElementById('badge-status');
     btn.disabled = true;
     const txtOriginal = btn.innerHTML;
     btn.innerHTML = 'Atualizando...';
-    await carregarDados();
+    badge.textContent = 'Buscando dados ao vivo...'; badge.className = 'loading';
+    try {
+      const dados = await apiFetch({ action: 'dados' });
+      dadosCompletos = (Array.isArray(dados) ? dados : []).filter(d => d['Placa']);
+      popularFiltros(dadosCompletos);
+      atualizarStats(dadosCompletos);
+      renderTabela();
+      const agora = new Date().toLocaleString('pt-BR', { day:'2-digit', month:'2-digit', year:'numeric', hour:'2-digit', minute:'2-digit' });
+      document.getElementById('ultima-atualizacao').textContent = `Atualizado ao vivo: ${agora}`;
+      badge.textContent = 'Atualizado ✓'; badge.className = 'ok';
+    } catch (err) {
+      badge.textContent = 'Erro ao atualizar'; badge.className = 'error';
+      alert('Não foi possível buscar os dados ao vivo. Tente novamente.');
+    }
     btn.disabled = false;
     btn.innerHTML = txtOriginal;
   }
