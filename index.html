@@ -609,26 +609,14 @@
   async function atualizarDados() {
     const btn = document.getElementById('btn-refresh');
     btn.disabled = true;
-    btn.textContent = 'Atualizando...';
-    fetch('./data.json?t=' + Date.now())
-      .then(r => r.json())
-      .then(data => {
-        dadosCompletos = data;
-        renderTabela(dadosCompletos);
-        atualizarCards(dadosCompletos);
-        popularFiltros(dadosCompletos);
-        document.getElementById('ultima-atualizacao').textContent = 'Atualizado agora';
-        btn.disabled = false;
-        btn.innerHTML = '&#8635; Atualizar';
-      })
-      .catch(() => {
-        alert('Erro ao atualizar. Tente novamente.');
-        btn.disabled = false;
-        btn.innerHTML = '&#8635; Atualizar';
-      });
+    const txtOriginal = btn.innerHTML;
+    btn.innerHTML = 'Atualizando...';
+    await carregarDados();
+    btn.disabled = false;
+    btn.innerHTML = txtOriginal;
   }
 
-  function carregarDados() {
+  async function carregarDados() {
     const badge = document.getElementById('badge-status');
     badge.textContent = 'Atualizando...'; badge.className = 'loading';
     try {
