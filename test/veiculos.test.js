@@ -94,3 +94,19 @@ test('nenhuma chave é valor de dado — a quebra de 30/07', () => {
   const chaves = Object.keys(r.veiculos[0]);
   assert.ok(!chaves.some(k => /^[A-Z]{3}\d{4}$/.test(k)), `chaves suspeitas: ${chaves.slice(0, 5)}`);
 });
+
+test('planilha de 2026: Status Vínculo vira Status, e Status Circulação fica acessível', () => {
+  const header = ['Placa', 'Fabricante', 'Modelo', 'Cor', 'Nome do motorista',
+                  'Status Vínculo', 'Status Circulação'];
+  const m = [header, ['ABC1D23', 'VOLKSWAGEN', 'Polo', 'BRANCO', 'Fulano', 'Alugado', 'Oficina']];
+  const r = interpretar(m);
+
+  assert.equal(r.veiculos[0]['Status'], 'Alugado', 'Status canônico vem do vínculo');
+  assert.equal(r.veiculos[0]['Status Circulação'], 'Oficina', 'a coluna original é preservada');
+  assert.ok(!r.colunasFaltando.includes('Status'), 'Status não pode mais constar como faltando');
+});
+
+test('Status Circulação sozinho ainda alimenta Status', () => {
+  const m = [['Placa', 'Modelo', 'Cor', 'Status Circulação'], ['ABC1D23', 'Polo', 'BRANCO', 'Circulante']];
+  assert.equal(interpretar(m).veiculos[0]['Status'], 'Circulante');
+});

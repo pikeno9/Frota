@@ -19,7 +19,12 @@ const ALIASES = {
                         'nome do locatario', 'cliente'],
   'CPF':               ['cpf'],
   'Telefone':          ['telefone', 'celular', 'fone', 'contato'],
-  'Status':            ['status', 'situacao']
+  /* A planilha de 2026 separou o status em duas colunas: "Status Vínculo" diz a
+     relação com o cliente (Alugado, Disponível, Atribuído, Perda Total, Em
+     preparação) e "Status Circulação" diz onde o carro está (Circulante,
+     Oficina). O site trata "Status" como o vínculo; quem quiser a circulação lê
+     a coluna pelo nome original, que interpretar() preserva em cada veículo. */
+  'Status':            ['status vinculo', 'status', 'situacao', 'status circulacao']
 };
 
 export function normalizar(v) {
