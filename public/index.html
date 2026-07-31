@@ -92,8 +92,7 @@ input,select{font:inherit;color:inherit}
   padding:var(--e4) var(--e8);
   display:flex;align-items:center;justify-content:space-between;gap:var(--e6);
 }
-.topo h1{font-size:19px;font-weight:700;line-height:1.2}
-.topo-sub{font-size:12.5px;opacity:.75;margin-top:2px;min-height:19px}
+.topo-marca{display:flex;align-items:center;gap:var(--e3);min-height:34px}
 .topo-dir{display:flex;align-items:center;gap:var(--e4)}
 .topo-usuario{text-align:right;line-height:1.3}
 .topo-usuario .nome{font-family:var(--fonte-titulo);font-weight:600;font-size:13px}
@@ -109,7 +108,7 @@ input,select{font:inherit;color:inherit}
 }
 .btn-topo:hover{background:rgba(255,255,255,.14)}
 .btn-topo:disabled{opacity:.5;cursor:progress}
-.logo-ocn{height:26px;width:auto;display:block;margin-left:var(--e2)}
+.logo-ocn{height:30px;width:auto;display:block}
 
 /* ══════════ CORPO ══════════ */
 .corpo{padding:var(--e6) var(--e8) var(--e12);max-width:1440px;margin:0 auto}
@@ -141,26 +140,56 @@ input,select{font:inherit;color:inherit}
   border-radius:var(--raio-2);
   padding:var(--e3) var(--e4);
   text-align:left;display:block;
-  transition:border-color var(--mov),background var(--mov);
+  transition:border-color var(--mov),filter var(--mov);
 }
-.cartao:hover{border-color:var(--cor-borda-forte)}
+.cartao:hover{filter:brightness(.97)}
 .cartao .rotulo{
   font-size:11.5px;font-weight:500;
   color:var(--cor-texto-fraco);
   text-transform:uppercase;letter-spacing:.04em;
   display:flex;align-items:center;gap:var(--e1);
 }
-.cartao .valor{font-family:var(--fonte-titulo);font-size:26px;font-weight:700;line-height:1.15;margin-top:var(--e1);display:block}
+.cartao .valor{font-family:var(--fonte-titulo);font-size:28px;font-weight:700;line-height:1.15;margin-top:var(--e1);display:block}
 .cartao .ponto{width:7px;height:7px;border-radius:var(--raio-pill);flex:none}
-.cartao[aria-pressed="true"]{background:var(--cor-roxo-fraco);border-color:var(--cor-roxo)}
-.cartao[aria-pressed="true"] .valor{color:var(--cor-roxo)}
-.ponto-total{background:var(--cor-cinza)}
+
+/* "Está tudo muito branco" (dono, 31/07): cada cartão veste a cor do próprio
+   status — o mesmo par texto-sobre-fundo dos selos, que já respeita 4,5:1 —,
+   e o total é a âncora roxa da marca. */
+.cartao-total{
+  background:linear-gradient(135deg,var(--cor-roxo) 0%,var(--cor-roxo-escuro) 100%);
+  border-color:var(--cor-roxo-escuro);
+}
+.cartao-total .rotulo{color:var(--cor-texto-inverso);opacity:.8}
+.cartao-total .valor{color:var(--cor-texto-inverso)}
+.cartao-total .ponto{background:var(--cor-texto-inverso)}
+.cartao-alugados{background:var(--cor-vermelho-fundo);border-color:var(--cor-vermelho-fundo)}
+.cartao-alugados .valor{color:var(--cor-vermelho)}
+.cartao-disponiveis{background:var(--cor-verde-fundo);border-color:var(--cor-verde-fundo)}
+.cartao-disponiveis .valor{color:var(--cor-verde)}
+.cartao-preparacao{background:var(--cor-ambar-fundo);border-color:var(--cor-ambar-fundo)}
+.cartao-preparacao .valor{color:var(--cor-ambar)}
+.cartao-oficina{background:var(--cor-lilas-fundo);border-color:var(--cor-lilas-fundo)}
+.cartao-oficina .valor{color:var(--cor-lilas)}
+.cartao-perda{background:var(--cor-preto-fundo);border-color:var(--cor-preto-fundo)}
+.cartao-perda .valor{color:var(--cor-preto)}
+.cartao-atribuidos{background:var(--cor-azul-fundo);border-color:var(--cor-azul-fundo)}
+.cartao-atribuidos .valor{color:var(--cor-azul)}
+.cartao-outros{background:var(--cor-cinza-fundo);border-color:var(--cor-cinza-fundo)}
+.cartao-outros .valor{color:var(--cor-cinza)}
+.ponto-total{background:var(--cor-texto-inverso)}
 .ponto-alugados{background:var(--cor-vermelho)}
 .ponto-disponiveis{background:var(--cor-verde)}
 .ponto-oficina{background:var(--cor-lilas)}
 .ponto-preparacao{background:var(--cor-ambar)}
+.ponto-perda{background:var(--cor-preto)}
 .ponto-atribuidos{background:var(--cor-azul)}
-.ponto-outros{background:var(--cor-preto)}
+.ponto-outros{background:var(--cor-cinza)}
+/* Anel por dentro: marca o cartão escolhido sem mexer no tamanho da caixa nem
+   apagar a cor do status. Sem sombra, como manda a maquete. */
+.cartao[aria-pressed="true"]{outline:2px solid var(--cor-roxo);outline-offset:-2px}
+.cartao-total[aria-pressed="true"]{outline-color:var(--cor-texto-inverso)}
+/* Depois do estado escolhido, para o foco de teclado nunca ficar escondido. */
+.cartao:focus-visible{outline:2px solid var(--cor-roxo);outline-offset:2px;border-radius:var(--raio-2)}
 
 /* ── barra de ferramentas ── */
 .ferramentas{
@@ -228,7 +257,9 @@ input,select{font:inherit;color:inherit}
 /* ── chips de filtro ── */
 .filtros-ativos{display:flex;flex-wrap:wrap;align-items:center;gap:var(--e2);margin-bottom:var(--e3)}
 .contador{font-size:13px;color:var(--cor-texto-fraco)}
-.contador b{font-family:var(--fonte-titulo);font-weight:600;color:var(--cor-texto)}
+.contador b{font-family:var(--fonte-titulo);font-weight:600;color:var(--cor-roxo)}
+/* O frescor da leitura, longe do caminho: encostado na direita da mesma linha. */
+.frescor{margin-left:auto;font-size:12px;color:var(--cor-texto-fraco)}
 #chips{display:contents}
 .chip{
   display:inline-flex;align-items:center;gap:var(--e1);
@@ -255,7 +286,9 @@ input,select{font:inherit;color:inherit}
 table{width:100%;border-collapse:separate;border-spacing:0}
 thead th{
   position:sticky;top:0;z-index:2;
-  background:var(--cor-superficie);
+  /* Roxo fraco: dá cor à tabela e deixa óbvio que a faixa que gruda no topo ao
+     rolar é o cabeçalho, não a primeira linha de dados. */
+  background:var(--cor-roxo-fraco);
   text-align:left;
   font-size:11.5px;font-weight:600;
   color:var(--cor-texto-fraco);
@@ -321,14 +354,14 @@ tr:hover .copiar,.copiar:focus-visible,.copiar.fixa,.copiar.copiado{opacity:1}
 .vazio .icone{
   width:44px;height:44px;margin:0 auto var(--e4);
   border-radius:var(--raio-pill);
-  background:var(--cor-fundo);
-  display:flex;align-items:center;justify-content:center;color:var(--cor-texto-fraco);
+  background:var(--cor-roxo-fraco);
+  display:flex;align-items:center;justify-content:center;color:var(--cor-roxo);
 }
 .vazio .icone-erro{background:var(--cor-vermelho-fundo);color:var(--cor-vermelho)}
 .vazio h3{font-size:15px;font-weight:600;margin-bottom:var(--e2)}
 .vazio p{font-size:13px;color:var(--cor-texto-fraco);margin-bottom:var(--e4);max-width:46ch;margin-inline:auto}
 .esqueleto{padding:var(--e3)}
-.esqueleto .barra{height:14px;border-radius:var(--raio-1);background:var(--cor-fundo);margin:var(--e3) 0}
+.esqueleto .barra{height:14px;border-radius:var(--raio-1);background:var(--cor-roxo-fraco);margin:var(--e3) 0}
 .esqueleto .barra:nth-child(2){width:92%}
 .esqueleto .barra:nth-child(3){width:96%}
 .esqueleto .barra:nth-child(4){width:88%}
@@ -338,7 +371,8 @@ tr:hover .copiar,.copiar:focus-visible,.copiar.fixa,.copiar.copiado{opacity:1}
 
 /* ── entrada ── */
 .login{
-  min-height:100vh;background:var(--cor-fundo);
+  min-height:100vh;
+  background:linear-gradient(180deg,var(--cor-roxo-fraco) 0%,var(--cor-fundo) 55%);
   display:flex;align-items:center;justify-content:center;
   padding:var(--e12) var(--e4);
 }
@@ -464,9 +498,11 @@ dialog::backdrop{background:rgba(24,1,64,.45)}
 <div id="tela-app" hidden>
 
   <header class="topo">
-    <div>
-      <h1>OCN Frota</h1>
-      <div class="topo-sub" id="topo-sub"></div>
+    <!-- O símbolo da OCN ocupa o lugar do letreiro, à esquerda (decisão do dono,
+         31/07). O h1 continua existindo para quem navega por leitor de tela. -->
+    <div class="topo-marca">
+      <img class="logo-ocn" src="img/ocn-logo-white.png" alt="OCN">
+      <h1 class="so-leitor">Veículos da frota OCN</h1>
     </div>
     <div class="topo-dir">
       <div class="topo-usuario">
@@ -482,7 +518,6 @@ dialog::backdrop{background:rgba(24,1,64,.45)}
         Admin
       </button>
       <button class="btn-topo" id="btn-sair" type="button">Sair</button>
-      <img class="logo-ocn" src="img/ocn-logo-white.png" alt="OCN">
     </div>
   </header>
 
@@ -506,7 +541,6 @@ dialog::backdrop{background:rgba(24,1,64,.45)}
       <select class="campo" id="f-status" aria-label="Filtrar por status"></select>
       <select class="campo" id="f-fabricante" aria-label="Filtrar por fabricante"></select>
       <select class="campo" id="f-modelo" aria-label="Filtrar por modelo"></select>
-      <select class="campo" id="f-cidade" aria-label="Filtrar por cidade"></select>
       <button class="btn" id="btn-mais-filtros" type="button" aria-expanded="false" aria-controls="mais-filtros">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"/><path d="M7 12h10"/><path d="M10 19h4"/></svg>
         Mais filtros
@@ -530,6 +564,7 @@ dialog::backdrop{background:rgba(24,1,64,.45)}
       <span class="contador" id="contador" aria-live="polite"></span>
       <span id="chips"></span>
       <button class="limpar" id="btn-limpar" type="button" hidden>Limpar tudo</button>
+      <span class="frescor" id="frescor"></span>
     </div>
 
     <div class="painel" id="painel-tabela" hidden>

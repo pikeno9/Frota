@@ -2,6 +2,7 @@ import express from 'express';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { interpretar } from './veiculos.js';
+import { interpretarContatos, enriquecerComContatos } from './contatos.js';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
@@ -19,7 +20,8 @@ function lerCookie(req, nome) {
   return null;
 }
 
-export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, confiarProxy = false, cookieSeguro = false }) {
+export function criarApp({ usuarios, sessao, cache, leitor, leitorContatos = null,
+                           agora = Date.now, confiarProxy = false, cookieSeguro = false }) {
   const app = express();
   /* Atrás do proxy do Railway, req.ip só é o IP real do visitante com isto ligado.
      Fica desligado por padrão para os testes locais não dependerem de cabeçalho. */
@@ -93,9 +95,33 @@ export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, co
   });
 
   // ── Veículos ─────────────────────────────────────────────
+
+  /* Veículo é o produto; contato é bônus. Esta função NUNCA rejeita: se a
+     segunda aba cair, a lista de veículos continua igual, só sem CPF e
+     telefone. O motivo fica no log e a contagem no /api/diagnostico. */
+  async function lerContatos() {
+    if (!leitorContatos) return [];
+    try {
+      return await leitorContatos.ler();
+    } catch (e) {
+      console.error('Falha ao ler a aba de contatos (a lista de veículos segue):', e.message);
+      return [];
+    }
+  }
+
   async function atualizar() {
-    const matriz = await leitor.ler();
-    cache.oferecer(interpretar(matriz), agora());
+    const [matriz, bruto] = await Promise.all([leitor.ler(), lerContatos()]);
+    const leitura = interpretar(matriz);
+    const contatos = interpretarContatos(bruto);
+    leitura.veiculos = enriquecerComContatos(leitura.veiculos, contatos);
+    leitura.contatos = {
+      linhaCabecalho: contatos.linhaCabecalho,
+      linhasNaAba: contatos.linhas,
+      colunasFaltando: contatos.colunasFaltando,
+      comCpf: leitura.veiculos.filter(v => v.CPF).length,
+      comTelefone: leitura.veiculos.filter(v => v.Telefone).length
+    };
+    cache.oferecer(leitura, agora());
   }
 
   app.get('/api/veiculos', exigeLogin, async (req, res) => {

@@ -61,7 +61,9 @@ export function criarCache({ arquivo, minutos = 5 }) {
           linhaCabecalho: leitura.linhaCabecalho,
           colunasDaPlanilha: leitura.colunasDaPlanilha,
           colunasAchadas: leitura.colunasAchadas,
-          colunasFaltando: leitura.colunasFaltando
+          colunasFaltando: leitura.colunasFaltando,
+          // Como foi a leitura da segunda aba (CPF e telefone). null = nem tentou.
+          contatos: leitura.contatos ?? null
         },
         lidoEm: agora
       };

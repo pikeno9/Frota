@@ -10,13 +10,30 @@ import { criarCache } from '../src/cache.js';
 
 const T0 = 1_800_000_000_000;
 
+const MOTORISTAS = ['Ana Beatriz Moraes', 'Carlos Eduardo Lima'];
+
 function matrizBoa(qtd = 3) {
-  const linhas = [['Placa', 'Fabricante', 'Modelo', 'Status']];
-  for (let i = 0; i < qtd; i++) linhas.push(['ABC' + (1000 + i), 'VOLKSWAGEN', 'Polo', 'Alugado']);
+  const linhas = [['Placa', 'Fabricante', 'Modelo', 'Status', 'Nome do motorista']];
+  for (let i = 0; i < qtd; i++) {
+    linhas.push(['ABC' + (1000 + i), 'VOLKSWAGEN', 'Polo', 'Alugado', MOTORISTAS[i] ?? 'Motorista ' + i]);
+  }
   return linhas;
 }
 
-function montar({ matriz = matrizBoa(), falhar = false } = {}) {
+/* A segunda aba: uma linha por locação, cabeçalho fora da primeira linha para o
+   servidor ter que procurar, como faz na aba principal. */
+function matrizContatos() {
+  return [
+    ['Relatório de importação'],
+    [],
+    ['Nome do motorista', '', 'Telefone', 'CPF do motorista', 'Placa do veículo'],
+    ['Ana Beatriz Moraes', '', '11987654321', '12345678901', 'ABC1000'],
+    ['Carlos Eduardo Lima', '', '', '22222222222', 'ABC1001']
+  ];
+}
+
+function montar({ matriz = matrizBoa(), falhar = false,
+                  contatos = matrizContatos(), falharContatos = false } = {}) {
   const dir = mkdtempSync(join(tmpdir(), 'frota-app-'));
   const usuarios = criarUsuarios({ caminhoBanco: join(dir, 'u.db') });
   usuarios.garantirAdminInicial('senha-admin');
@@ -27,6 +44,12 @@ function montar({ matriz = matrizBoa(), falhar = false } = {}) {
     sessao: criarSessao('segredo-de-teste'),
     cache: criarCache({ arquivo: join(dir, 'c.json'), minutos: 5 }),
     leitor: { ler: async () => { if (falhar) throw new Error('403'); return matriz; } },
+    leitorContatos: {
+      ler: async () => {
+        if (falharContatos) throw new Error('403 na aba de contatos');
+        return contatos;
+      }
+    },
     agora: () => T0
   });
 
@@ -77,6 +100,67 @@ test('login certo devolve cookie httpOnly e dá acesso aos veículos', async () 
   assert.equal(corpo.veiculos.length, 3);
   assert.equal(corpo.veiculos[0].Placa, 'ABC1000');
   assert.equal(corpo.aviso, null);
+  await fechar(); limpar();
+});
+
+test('/api/veiculos traz o CPF e o telefone da segunda aba, casados pelo motorista', async () => {
+  const { app, limpar } = montar({ matriz: matrizBoa(3) });
+  const { url, fechar } = await subir(app);
+  const login = await entrar(url, 'admin', 'senha-admin');
+
+  const corpo = await (await fetch(`${url}/api/veiculos`, { headers: { Cookie: login.cookie } })).json();
+  const [ana, carlos, semContato] = corpo.veiculos;
+
+  assert.equal(ana.CPF, '123.456.789-01');
+  assert.equal(ana.Telefone, '(11) 98765-4321');
+  assert.equal(carlos.CPF, '222.222.222-22');
+  assert.equal(carlos.Telefone, '', 'metade da frota não tem telefone na planilha');
+  assert.equal(semContato.CPF, '', 'motorista fora da segunda aba fica sem contato, não com contato errado');
+  assert.ok(Object.hasOwn(semContato, 'Telefone'), 'o campo existe para a tela desenhar traço');
+  await fechar(); limpar();
+});
+
+test('REGRA CENTRAL: a segunda aba fora do ar não derruba a lista de veículos', async () => {
+  const { app, limpar } = montar({ matriz: matrizBoa(3), falharContatos: true });
+  const { url, fechar } = await subir(app);
+  const login = await entrar(url, 'admin', 'senha-admin');
+
+  const r = await fetch(`${url}/api/veiculos`, { headers: { Cookie: login.cookie } });
+  assert.equal(r.status, 200, 'contato é bônus; veículo é o produto');
+  const corpo = await r.json();
+  assert.equal(corpo.veiculos.length, 3);
+  assert.equal(corpo.aviso, null, 'falhar a segunda aba não é problema da planilha principal');
+  assert.ok(!Object.hasOwn(corpo.veiculos[0], 'CPF'), 'sem a aba lida, a tela não finge que tem a coluna');
+  await fechar(); limpar();
+});
+
+test('sem leitor de contatos configurado, a rota segue de pé', async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'frota-app5-'));
+  const usuarios = criarUsuarios({ caminhoBanco: join(dir, 'u.db') });
+  usuarios.garantirAdminInicial('senha-admin');
+  const app = criarApp({
+    usuarios, sessao: criarSessao('s'),
+    cache: criarCache({ arquivo: join(dir, 'c.json'), minutos: 5 }),
+    leitor: { ler: async () => matrizBoa(2) }, agora: () => T0
+  });
+  const { url, fechar } = await subir(app);
+  try {
+    const login = await entrar(url, 'admin', 'senha-admin');
+    const corpo = await (await fetch(`${url}/api/veiculos`, { headers: { Cookie: login.cookie } })).json();
+    assert.equal(corpo.veiculos.length, 2);
+  } finally {
+    await fechar(); usuarios.fechar(); rmSync(dir, { recursive: true, force: true });
+  }
+});
+
+test('o diagnóstico conta o que veio da segunda aba', async () => {
+  const { app, limpar } = montar({ matriz: matrizBoa(3) });
+  const { url, fechar } = await subir(app);
+  const login = await entrar(url, 'admin', 'senha-admin');
+  const d = await (await fetch(`${url}/api/diagnostico`, { headers: { Cookie: login.cookie } })).json();
+  assert.equal(d.contatos.linhaCabecalho, 3, 'achou o cabeçalho da segunda aba sozinho');
+  assert.equal(d.contatos.comCpf, 2, 'dois veículos casaram com CPF');
+  assert.equal(d.contatos.comTelefone, 1);
   await fechar(); limpar();
 });
 

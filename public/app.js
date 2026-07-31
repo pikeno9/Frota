@@ -72,11 +72,12 @@ export function grupoDe(status) {
   if (s.includes('disponiv')) return 'disponiveis';
   if (s.includes('prepara')) return 'preparacao';
   if (s.includes('atribuid')) return 'atribuidos';
+  if (s.includes('perda')) return 'perda';
   return 'outros';
 }
 
 export function contar(veiculos) {
-  const c = { total: 0, alugados: 0, disponiveis: 0, oficina: 0, preparacao: 0, atribuidos: 0, outros: 0 };
+  const c = { total: 0, alugados: 0, disponiveis: 0, oficina: 0, preparacao: 0, atribuidos: 0, perda: 0, outros: 0 };
   for (const v of Array.isArray(veiculos) ? veiculos : []) {
     c.total++;
     c[grupoDe(statusEfetivo(v))]++;
@@ -174,7 +175,6 @@ export function descreverCriterios(criterios = {}, rotulosGrupo = {}) {
   if (criterios.status) partes.push(`status ${criterios.status}`);
   if (criterios.fabricante) partes.push(`fabricante ${criterios.fabricante}`);
   if (criterios.modelo) partes.push(`modelo ${criterios.modelo}`);
-  if (criterios.cidade) partes.push(`cidade ${criterios.cidade}`);
   if (criterios.uf) partes.push(`UF ${criterios.uf}`);
   if (criterios.safra) partes.push(`safra ${criterios.safra}`);
   if (partes.length === 0) return '';
@@ -231,23 +231,33 @@ function el(tag, props = {}, ...filhos) {
   return n;
 }
 
+/* Rótulos na ordem e nas palavras que o dono escolheu (31/07). Tudo em pt-BR:
+   a tela é lida por quem opera a frota, não por quem programa. */
 const CARTOES = [
-  { chave: 'total', rotulo: 'Total' },
+  { chave: 'total', rotulo: 'Total da frota' },
   { chave: 'alugados', rotulo: 'Alugados' },
   { chave: 'disponiveis', rotulo: 'Disponíveis' },
+  { chave: 'preparacao', rotulo: 'Em preparação' },
   { chave: 'oficina', rotulo: 'Oficina' },
-  { chave: 'preparacao', rotulo: 'Preparação' },
+  { chave: 'perda', rotulo: 'Perda total' },
   { chave: 'atribuidos', rotulo: 'Atribuídos' },
   { chave: 'outros', rotulo: 'Outros' }
 ];
+/* Estes dois só aparecem quando existem: numa frota sem nenhum carro atribuído,
+   um cartão zerado é ruído. Os seis do dono ficam sempre à vista. */
+const CARTOES_SOB_DEMANDA = ['atribuidos', 'outros'];
 const ROTULO_GRUPO = Object.fromEntries(CARTOES.map(c => [c.chave, c.rotulo]));
 
 const CHAVE_PREFS = 'frota:preferencias';
 const CHAVE_USUARIO = 'frota:usuario';
 const MINUTOS_RECARGA = 5;
 
+/* Sem "cidade": o dono tirou esse filtro em 31/07. filtrar() continua sabendo
+   filtrar por cidade — quem some é o controle na tela. */
 const CRITERIOS_VAZIOS = () =>
-  ({ busca: '', status: '', grupo: '', fabricante: '', modelo: '', cidade: '', uf: '', safra: '' });
+  ({ busca: '', status: '', grupo: '', fabricante: '', modelo: '', uf: '', safra: '' });
+
+const SELECTS = { 'f-status': 'status', 'f-fabricante': 'fabricante', 'f-modelo': 'modelo', 'f-uf': 'uf', 'f-safra': 'safra' };
 
 const estado = {
   veiculos: [],
@@ -313,7 +323,11 @@ function guardarPrefs() {
 function lerPrefs() {
   try {
     const p = JSON.parse(localStorage.getItem(CHAVE_PREFS) || '{}');
-    if (p.criterios) Object.assign(estado.criterios, p.criterios, { busca: '' });
+    /* Só entram critérios que ainda existem. Sem isso, um filtro de cidade
+       guardado antes de 31/07 continuaria filtrando sem controle na tela. */
+    for (const k of Object.keys(estado.criterios)) {
+      if (k !== 'busca' && p.criterios?.[k]) estado.criterios[k] = p.criterios[k];
+    }
     if (p.ordem?.coluna) estado.ordem = p.ordem;
     if (p.densidade) estado.densidade = p.densidade;
   } catch { /* preferência corrompida não pode impedir o login */ }
@@ -435,7 +449,6 @@ function popularFiltros() {
     'f-status': [opcoesDeStatus(), 'Todos os status', 'status'],
     'f-fabricante': [opcoesDe(estado.veiculos, ['Fabricante', 'Marca']), 'Todos os fabricantes', 'fabricante'],
     'f-modelo': [opcoesDe(estado.veiculos, ['Modelo']), 'Todos os modelos', 'modelo'],
-    'f-cidade': [opcoesDe(estado.veiculos, ['Cidade Entrega', 'Cidade']), 'Todas as cidades', 'cidade'],
     'f-uf': [opcoesDe(estado.veiculos, ['UF Entrega', 'UF']), 'Todas as UFs', 'uf'],
     'f-safra': [opcoesDe(estado.veiculos, ['Safra']), 'Todas as safras', 'safra']
   };
@@ -466,7 +479,7 @@ function opcoesDeStatus() {
 function limparFiltros() {
   estado.criterios = CRITERIOS_VAZIOS();
   $('busca').value = '';
-  for (const id of ['f-status', 'f-fabricante', 'f-modelo', 'f-cidade', 'f-uf', 'f-safra']) $(id).value = '';
+  for (const id of Object.keys(SELECTS)) $(id).value = '';
   guardarPrefs();
   renderizar();
 }
@@ -482,9 +495,9 @@ function renderizar() {
   desenharChips();
   desenharCabecalho();
   desenharCorpo();
-  $('topo-sub').textContent = estado.lidoEm
-    ? `Lido da planilha ${formatarQuando(estado.lidoEm)} · atualiza sozinho a cada ${MINUTOS_RECARGA} minutos`
-    : '';
+  /* O frescor saiu da faixa roxa do cabeçalho (31/07) e virou uma linha discreta
+     ao lado do contador: quem quiser saber, sabe; quem não quiser, não tropeça. */
+  $('frescor').textContent = estado.lidoEm ? `Lido da planilha ${formatarQuando(estado.lidoEm)}` : '';
   $('btn-exportar-texto').textContent = estado.visiveis.length === estado.veiculos.length
     ? `Exportar os ${estado.veiculos.length}`
     : `Exportar os ${estado.visiveis.length} filtrados`;
@@ -505,10 +518,10 @@ function desenharTarja() {
 function desenharResumo() {
   const c = contar(estado.veiculos);
   const resumo = $('resumo');
-  resumo.replaceChildren(...CARTOES.filter(def => def.chave !== 'outros' || c.outros > 0).map(def => {
+  resumo.replaceChildren(...CARTOES.filter(def => !CARTOES_SOB_DEMANDA.includes(def.chave) || c[def.chave] > 0).map(def => {
     const ativo = def.chave === 'total' ? !estado.criterios.grupo : estado.criterios.grupo === def.chave;
     return el('button', {
-      class: 'cartao', type: 'button', 'aria-pressed': String(ativo),
+      class: `cartao cartao-${def.chave}`, type: 'button', 'aria-pressed': String(ativo),
       onclick: () => {
         estado.criterios.grupo = def.chave === 'total' || estado.criterios.grupo === def.chave ? '' : def.chave;
         guardarPrefs();
@@ -526,7 +539,7 @@ function desenharResumo() {
 function desenharChips() {
   const rotulos = {
     busca: 'Busca', grupo: 'Grupo', status: 'Status', fabricante: 'Fabricante',
-    modelo: 'Modelo', cidade: 'Cidade', uf: 'UF', safra: 'Safra'
+    modelo: 'Modelo', uf: 'UF', safra: 'Safra'
   };
   const ativos = Object.entries(estado.criterios).filter(([, v]) => v);
   $('contador').replaceChildren(
@@ -667,7 +680,13 @@ async function copiar(texto, botao) {
 }
 
 /* Ordem fixa, e o campo só entra se a COLUNA existir na planilha. Mostrar
-   "CPF —" para uma coluna que não existe mais é mentira de tela. */
+   "CPF —" para uma coluna que não existe é mentira de tela — por isso o servidor
+   só põe CPF e Telefone nos veículos quando conseguiu ler a segunda aba. Lida a
+   aba, os dois campos aparecem em TODO veículo: o traço aí quer dizer "a
+   planilha não tem esse telefone", que é o caso de metade da frota.
+   O dono cortou 14 campos em 31/07 (cidade, UF, safra, frota, os "na pasta?",
+   Status Circulação…). Status Circulação continua sendo LIDO por statusEfetivo
+   — é ele que faz o carro alugado aparecer como Oficina —, só não é exibido. */
 const CAMPOS_DETALHE = [
   { rotulo: 'Placa', apelidos: ['Placa'], mono: true, copiar: true },
   { rotulo: 'Chassi', apelidos: ['Chassi'], mono: true, copiar: true },
@@ -678,22 +697,10 @@ const CAMPOS_DETALHE = [
   { rotulo: 'Ano do veículo', apelidos: ['Ano Veículo'] },
   { rotulo: 'Ano do modelo', apelidos: ['Ano Modelo'] },
   { rotulo: 'Motorista', apelidos: ['Nome do motorista', 'Motorista'] },
-  { rotulo: 'Recebido em', apelidos: ['Data de recebimento'] },
-  { rotulo: 'Cidade de entrega', apelidos: ['Cidade Entrega', 'Cidade'] },
-  { rotulo: 'UF', apelidos: ['UF Entrega', 'UF'] },
-  { rotulo: 'Safra', apelidos: ['Safra'] },
-  { rotulo: 'Frota', apelidos: ['Frota'], mono: true },
-  { rotulo: 'ID no Admin', apelidos: ['ID no Admin'], mono: true },
+  { rotulo: 'CPF', apelidos: ['CPF'], mono: true, copiar: true },
+  { rotulo: 'Telefone', apelidos: ['Telefone'], mono: true, copiar: true },
   { rotulo: 'Status Vínculo', apelidos: VINCULO, selo: true },
-  { rotulo: 'Status Circulação', apelidos: CIRCULACAO, selo: true },
-  { rotulo: 'Dia do rodízio', apelidos: ['Dia do rodízio'] },
-  { rotulo: 'Final da placa', apelidos: ['Final da placa'] },
-  { rotulo: 'CRLV na pasta?', apelidos: ['CRLV na pasta?'] },
-  { rotulo: 'Vistoriado?', apelidos: ['Vistoriado?'] },
-  { rotulo: 'Fatura na pasta?', apelidos: ['Fatura na pasta?'] },
-  { rotulo: 'Apólice de seguro na pasta?', apelidos: ['Apólice de seguro na pasta?'] },
-  { rotulo: 'Registrado no Admin?', apelidos: ['Registrado no Admin?'] },
-  { rotulo: 'Fornecedor de Chip', apelidos: ['Fornecedor de Chip'] }
+  { rotulo: 'Dia do rodízio', apelidos: ['Dia do rodízio'] }
 ];
 
 function detalheDe(veiculo) {
@@ -768,7 +775,7 @@ function abrirDoEndereco() {
      que a pessoa deixou salvo — senão o link "não funciona" sem explicação. */
   estado.criterios = CRITERIOS_VAZIOS();
   $('busca').value = '';
-  for (const id of ['f-status', 'f-fabricante', 'f-modelo', 'f-cidade', 'f-uf', 'f-safra']) $(id).value = '';
+  for (const id of Object.keys(SELECTS)) $(id).value = '';
   estado.aberta = valorDe(achou, 'Placa');
   renderizar();
   history.replaceState(null, '', location.pathname);
@@ -934,7 +941,17 @@ async function carregarDiagnostico() {
       el('div', { text: `Lido ${formatarQuando(d.lidoEm) || '—'}${d.servindoDaCopia ? ' · servindo da cópia' : ''}` }),
       d.colunasFaltando?.length
         ? el('div', { class: 'err', text: `Colunas não encontradas: ${d.colunasFaltando.join(', ')}` })
-        : el('div', { class: 'ok', text: 'Todas as colunas esperadas foram encontradas.' })
+        : el('div', { class: 'ok', text: 'Todas as colunas esperadas foram encontradas.' }),
+      /* A segunda aba é a que traz CPF e telefone. Quando ela cai, a tela não
+         muda de cara — some com dois campos —, então o motivo precisa aparecer
+         em algum lugar, e o lugar é aqui. */
+      d.contatos?.linhaCabecalho
+        ? el('div', {
+            text: `Contatos (2ª aba): cabeçalho na linha ${d.contatos.linhaCabecalho}, ` +
+                  `${d.contatos.linhasNaAba} linhas · ${d.contatos.comCpf} veículos com CPF ` +
+                  `e ${d.contatos.comTelefone} com telefone`
+          })
+        : el('div', { class: 'err', text: 'Não consegui ler a aba de contatos — CPF e telefone ficam de fora.' })
     );
   } catch (e) {
     alvo.replaceChildren(el('div', { class: 'err', text: e.message }));
@@ -954,11 +971,7 @@ function ligarFiltros() {
     }, 200);
   });
 
-  const selects = {
-    'f-status': 'status', 'f-fabricante': 'fabricante', 'f-modelo': 'modelo',
-    'f-cidade': 'cidade', 'f-uf': 'uf', 'f-safra': 'safra'
-  };
-  for (const [id, criterio] of Object.entries(selects)) {
+  for (const [id, criterio] of Object.entries(SELECTS)) {
     $(id).addEventListener('change', ev => {
       estado.criterios[criterio] = ev.target.value;
       guardarPrefs();

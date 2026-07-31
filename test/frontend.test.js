@@ -103,16 +103,16 @@ test('contar: o alugado na oficina conta em Oficina e NÃO em Alugados', () => {
 
 test('contar: os cartões somam o total, sem sobreposição', () => {
   const c = contar(FROTA);
-  const soma = c.alugados + c.disponiveis + c.oficina + c.preparacao + c.atribuidos + c.outros;
+  const soma = c.alugados + c.disponiveis + c.oficina + c.preparacao + c.atribuidos + c.perda + c.outros;
   assert.equal(c.total, FROTA.length);
   assert.equal(soma, c.total, `os cartões somam ${soma} e o total é ${c.total}`);
 });
 
-test('contar: cada cartão com o seu', () => {
+test('contar: cada cartão com o seu, e Perda total tem o próprio balde', () => {
   const c = contar(FROTA);
   assert.deepEqual(c, {
     total: 6, alugados: 1, disponiveis: 1, oficina: 1,
-    preparacao: 1, atribuidos: 1, outros: 1
+    preparacao: 1, atribuidos: 1, perda: 1, outros: 0
   });
 });
 
@@ -120,6 +120,7 @@ test('contar: lista vazia devolve zeros e não lança', () => {
   const c = contar([]);
   assert.equal(c.total, 0);
   assert.equal(c.outros, 0);
+  assert.equal(c.perda, 0);
   assert.equal(contar(undefined).total, 0);
 });
 
@@ -161,7 +162,8 @@ test('filtrar: busca sem resultado devolve lista vazia', () => {
 test('filtrar: o grupo usa o status efetivo, não o vínculo cru', () => {
   assert.deepEqual(placas(filtrar(FROTA, { grupo: 'alugados' })), ['BQK4E12']);
   assert.deepEqual(placas(filtrar(FROTA, { grupo: 'oficina' })), ['CUM0J31']);
-  assert.deepEqual(placas(filtrar(FROTA, { grupo: 'outros' })), ['GDV3F82']);
+  assert.deepEqual(placas(filtrar(FROTA, { grupo: 'perda' })), ['GDV3F82']);
+  assert.deepEqual(placas(filtrar(FROTA, { grupo: 'outros' })), []);
 });
 
 test('filtrar: status exato também usa o status efetivo', () => {
@@ -247,9 +249,85 @@ test('a tela tem os estados que hoje não existem', () => {
   }
 });
 
-test('o cabeçalho é degradê roxo com a marca da OCN à direita', () => {
+test('o cabeçalho é degradê roxo com o símbolo da OCN à ESQUERDA, sem o letreiro', () => {
   assert.match(HTML, /linear-gradient\([^)]*var\(--cor-roxo\)/, 'falta o degradê roxo do cabeçalho');
   assert.match(HTML, /img\/ocn-logo-white\.png/, 'falta o símbolo da OCN');
+
+  const topo = HTML.match(/<header class="topo">([\s\S]*?)<\/header>/)[1];
+  const logo = topo.indexOf('logo-ocn');
+  const direita = topo.indexOf('topo-dir');
+  assert.ok(logo !== -1, 'o símbolo da OCN precisa estar no cabeçalho');
+  assert.ok(logo < direita, 'o símbolo vem antes do bloco da direita — ele é a marca à esquerda agora');
+  assert.ok(!/<h1[^>]*>\s*OCN Frota\s*<\/h1>/.test(HTML), 'o letreiro "OCN Frota" deu lugar ao símbolo');
+});
+
+// ══════════ iteração 2 — o que o dono pediu depois de ver a tela ══════════
+
+const CAMPOS_DETALHE = (() => {
+  const bloco = JS.match(/const CAMPOS_DETALHE = \[([\s\S]*?)\n\];/);
+  assert.ok(bloco, 'não achei o bloco CAMPOS_DETALHE em public/app.js');
+  return [...bloco[1].matchAll(/rotulo: '([^']+)'/g)].map(m => m[1]);
+})();
+
+test('os campos que o dono tirou saíram do detalhe', () => {
+  const removidos = [
+    'Cidade de entrega', 'UF', 'Safra', 'Frota', 'ID no Admin', 'Status Circulação',
+    'Final da placa', 'CRLV na pasta?', 'Vistoriado?', 'Fatura na pasta?',
+    'Apólice de seguro na pasta?', 'Registrado no Admin?', 'Fornecedor de Chip', 'Recebido em'
+  ];
+  for (const campo of removidos) {
+    assert.ok(!CAMPOS_DETALHE.includes(campo), `"${campo}" ainda aparece no detalhe do veículo`);
+  }
+});
+
+test('Status Circulação sai da tela mas continua sendo LIDO — é ele que faz o carro virar Oficina', () => {
+  assert.match(JS, /Status Circulação/, 'a coluna precisa continuar sendo lida por statusEfetivo');
+  assert.equal(statusEfetivo(NA_OFICINA), 'Oficina');
+});
+
+test('CPF e Telefone voltaram ao detalhe, agora vindos da segunda aba', () => {
+  assert.ok(CAMPOS_DETALHE.includes('CPF'), 'falta o CPF no detalhe');
+  assert.ok(CAMPOS_DETALHE.includes('Telefone'), 'falta o Telefone no detalhe');
+});
+
+test('o filtro de cidade saiu da barra de ferramentas', () => {
+  assert.ok(!HTML.includes('f-cidade'), 'o select de cidade ainda está no HTML');
+  assert.ok(!JS.includes('f-cidade'), 'a fiação do select de cidade ainda está no app.js');
+});
+
+test('a faixa de "lido da planilha · atualiza sozinho" saiu do cabeçalho', () => {
+  assert.ok(!FRENTE.includes('atualiza sozinho'), 'a faixa roxa de frescor precisa sumir');
+  assert.ok(!FRENTE.includes('topo-sub'), 'o elemento da faixa continua no HTML');
+});
+
+test('os cartões de resumo estão em português, com as palavras que o dono escolheu', () => {
+  const bloco = JS.match(/const CARTOES = \[([\s\S]*?)\n\];/)[1];
+  const rotulos = [...bloco.matchAll(/rotulo: '([^']+)'/g)].map(m => m[1]);
+  for (const esperado of ['Total da frota', 'Alugados', 'Disponíveis', 'Em preparação', 'Oficina', 'Perda total']) {
+    assert.ok(rotulos.includes(esperado), `falta o cartão "${esperado}"`);
+  }
+});
+
+test('nenhuma palavra em inglês sobrou na tela', () => {
+  /* Só palavras que não existem em português nem como parte de identificador
+     daqui: "Exportar" não casa com \bExport\b, e type="search" é minúsculo. */
+  const ingles = [
+    'Fleet', 'Rented', 'Available', 'Workshop', 'Total loss', 'In preparation',
+    'Search', 'Export', 'Loading', 'Refresh', 'Settings', 'Filters', 'Clear',
+    'Close', 'Driver', 'Plate', 'Users', 'Password', 'Sign in', 'Logout'
+  ];
+  const achadas = ingles.filter(p => new RegExp(`\\b${p}\\b`).test(FRENTE));
+  assert.deepEqual(achadas, [], `texto em inglês na tela: ${achadas.join(', ')}`);
+});
+
+test('mais cor: o roxo sai do cabeçalho e os cartões deixam de ser brancos', () => {
+  const estilo = HTML.match(/<style>([\s\S]*?)<\/style>/)[1];
+  assert.match(estilo, /thead th\{[^}]*background:var\(--cor-roxo-fraco\)/,
+    'o cabeçalho da tabela continua branco');
+  assert.match(estilo, /\.cartao-total\{[^}]*linear-gradient/,
+    'o cartão do total é a âncora roxa do resumo');
+  const tintados = (estilo.match(/\.cartao-[a-z]+\{[^}]*background:var\(--cor-[a-z-]+\)/g) || []).length;
+  assert.ok(tintados >= 5, `só ${tintados} cartões com cor de fundo — "está tudo muito branco" continua valendo`);
 });
 
 test('o logo é um arquivo de verdade, não base64 embutido', () => {

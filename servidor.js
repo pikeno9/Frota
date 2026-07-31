@@ -45,6 +45,12 @@ export function montarPecas(env) {
       minutos: Number(env.CACHE_MINUTOS || 5)
     }),
     leitor: criarLeitor({ planilhaId, aba: env.PLANILHA_ABA || 'import_data', credenciaisJson }),
+    /* Segunda aba, só para CPF e telefone do motorista — eles saíram da aba
+       principal em 2026. Mesma planilha, outra aba, leitura independente: se
+       esta falhar, a lista de veículos não sente. */
+    leitorContatos: criarLeitor({
+      planilhaId, aba: env.PLANILHA_ABA_CONTATOS || 'import_dados', credenciaisJson
+    }),
     /* No Railway o servidor fica atrás de um proxy. Sem isto, req.ip devolve o IP do
        proxy para todo mundo e o limite de tentativas de login vira global — uma pessoa
        errando a senha trancaria a equipe inteira. */

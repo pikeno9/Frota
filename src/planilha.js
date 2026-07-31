@@ -21,6 +21,7 @@ export function criarLeitor({ planilhaId, aba, credenciaisJson, buscar }) {
   const chamar = buscar || (url => buscarNoGoogle(url, credenciaisJson));
 
   return {
+    aba,   // exposto só para quem monta as peças conseguir conferir qual aba caiu em qual leitor
     async ler() {
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${planilhaId}` +
                   `/values/${encodeURIComponent(aba)}?valueRenderOption=UNFORMATTED_VALUE` +

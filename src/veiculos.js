@@ -17,8 +17,11 @@ const ALIASES = {
   'Ano Modelo':        ['ano modelo', 'ano do modelo'],
   'Nome do motorista': ['nome do motorista', 'motorista', 'condutor', 'locatario',
                         'nome do locatario', 'cliente'],
-  'CPF':               ['cpf'],
-  'Telefone':          ['telefone', 'celular', 'fone', 'contato'],
+  /* CPF e Telefone saíram desta aba em 2026 e moram na `import_dados` — quem os
+     traz agora é o contatos.js. Cobrá-los aqui deixaria o diagnóstico do
+     administrador vermelho todo dia por uma coluna que mudou de endereço, e
+     alarme que sempre toca ninguém mais escuta. Se um dia voltarem, interpretar()
+     preserva toda coluna da planilha pelo nome e a tela pega os dois de novo. */
   /* A planilha de 2026 separou o status em duas colunas: "Status Vínculo" diz a
      relação com o cliente (Alugado, Disponível, Atribuído, Perda Total, Em
      preparação) e "Status Circulação" diz onde o carro está (Circulante,

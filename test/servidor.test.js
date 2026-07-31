@@ -48,6 +48,26 @@ test('criarApp respeita confiarProxy', async () => {
   assert.ok(!criarApp({}).get('trust proxy'), 'sem a chave, o padrão do Express fica intacto');
 });
 
+test('montarPecas monta os dois leitores: a aba da frota e a dos contatos', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'frota-abas-'));
+  const base = {
+    PLANILHA_ID: 'x', GOOGLE_SERVICE_ACCOUNT_JSON: CREDENCIAL_VALIDA, SESSION_SECRET: 'seg',
+    DB_PATH: join(dir, 'f.db'), COPIA_PATH: join(dir, 'c.json')
+  };
+  const padrao = montarPecas(base);
+  assert.equal(padrao.leitorContatos.aba, 'import_dados', 'o padrão da aba de contatos');
+  padrao.usuarios.fechar();
+
+  const trocado = montarPecas({
+    ...base, DB_PATH: join(dir, 'g.db'),
+    PLANILHA_ABA: 'Carros Ativos', PLANILHA_ABA_CONTATOS: 'outra_aba'
+  });
+  assert.equal(trocado.leitor.aba, 'Carros Ativos');
+  assert.equal(trocado.leitorContatos.aba, 'outra_aba', 'dá para trocar a aba sem mexer no código');
+  trocado.usuarios.fechar();
+  rmSync(dir, { recursive: true, force: true });
+});
+
 test('montarPecas cria o admin inicial quando o banco está vazio', () => {
   const dir = mkdtempSync(join(tmpdir(), 'frota-s-'));
   const pecas = montarPecas({

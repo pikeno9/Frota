@@ -106,6 +106,16 @@ test('planilha de 2026: Status Vínculo vira Status, e Status Circulação fica 
   assert.ok(!r.colunasFaltando.includes('Status'), 'Status não pode mais constar como faltando');
 });
 
+test('CPF e Telefone não são mais cobrados desta aba — eles vêm da import_dados', () => {
+  const header = ['Placa', 'Fabricante', 'Modelo', 'Cor', 'Ano Veículo', 'Ano Modelo', 'Chassi',
+                  'Renavam', 'Nome do motorista', 'Status Vínculo', 'Status Circulação'];
+  const r = interpretar([header, ['ABC1D23', 'VOLKSWAGEN', 'Polo', 'BRANCO', '2025', '2026',
+                                  '9BW', '123', 'Fulano', 'Alugado', 'Circulante']]);
+  /* Cobrar aqui uma coluna que mudou de aba faz o diagnóstico do administrador
+     acusar erro todo dia — e um alarme que sempre toca ninguém mais escuta. */
+  assert.deepEqual(r.colunasFaltando, [], 'a aba de 2026 está completa como ela é hoje');
+});
+
 test('Status Circulação sozinho ainda alimenta Status', () => {
   const m = [['Placa', 'Modelo', 'Cor', 'Status Circulação'], ['ABC1D23', 'Polo', 'BRANCO', 'Circulante']];
   assert.equal(interpretar(m).veiculos[0]['Status'], 'Circulante');
