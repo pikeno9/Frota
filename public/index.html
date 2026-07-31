@@ -1,0 +1,592 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>OCN Frota — Veículos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Lexend+Deca:wght@300;400;500;600&display=swap">
+<style>
+:root{
+  /* ── cor ── */
+  --cor-roxo:#5A00F8;
+  --cor-roxo-forte:#4B00D1;
+  --cor-roxo-escuro:#180140;
+  --cor-roxo-fraco:#F1EAFE;
+  --cor-fundo:#F4F5F9;
+  --cor-superficie:#FFFFFF;
+  --cor-borda:#E4E2ED;
+  --cor-borda-forte:#CFCBDE;
+  --cor-texto:#191524;
+  --cor-texto-fraco:#64607A;
+  --cor-texto-inverso:#FFFFFF;
+
+  --cor-verde:#0F6B3F;    --cor-verde-fundo:#E4F5EC;
+  --cor-vermelho:#A8301B; --cor-vermelho-fundo:#FCE9E5;
+  --cor-ambar:#8A5300;    --cor-ambar-fundo:#FDF0DC;
+  --cor-azul:#17479E;     --cor-azul-fundo:#E6EDFB;
+  --cor-lilas:#5B21B6;    --cor-lilas-fundo:#F0E9FD;
+  --cor-cinza:#55516A;    --cor-cinza-fundo:#EDECF2;
+  --cor-preto:#241F33;    --cor-preto-fundo:#E2E0E8;
+
+  /* ── tipografia ── */
+  --fonte-titulo:'Plus Jakarta Sans',system-ui,sans-serif;
+  --fonte-corpo:'Lexend Deca',system-ui,sans-serif;
+  --fonte-mono:ui-monospace,'Cascadia Mono',Menlo,monospace;
+
+  /* ── raio ── */
+  --raio-1:8px;    /* controles */
+  --raio-2:12px;   /* cartões e painéis */
+  --raio-pill:999px;
+
+  /* ── espaço (escala 4) ── */
+  --e1:4px; --e2:8px; --e3:12px; --e4:16px; --e6:24px; --e8:32px; --e12:48px;
+
+  /* ── movimento ── */
+  --mov:150ms ease;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+[hidden]{display:none !important}
+body{
+  font-family:var(--fonte-corpo);
+  font-weight:400;
+  font-size:14px;
+  line-height:1.5;
+  background:var(--cor-fundo);
+  color:var(--cor-texto);
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,th{font-family:var(--fonte-titulo);letter-spacing:-0.01em}
+button{font:inherit;cursor:pointer;border:none;background:none;color:inherit}
+input,select{font:inherit;color:inherit}
+.mono{font-family:var(--fonte-mono);font-size:0.92em;letter-spacing:0.01em}
+.fraco{color:var(--cor-texto-fraco)}
+.centro{text-align:center}
+.ok{color:var(--cor-verde)}
+.err{color:var(--cor-vermelho)}
+
+/* Sem foco visível não existe teclado — é por aqui que passa quem não usa mouse. */
+:focus-visible{outline:2px solid var(--cor-roxo);outline-offset:2px;border-radius:var(--raio-1)}
+.topo :focus-visible,.login-topo :focus-visible{outline-color:var(--cor-texto-inverso)}
+
+.so-leitor,.fora-da-tela{
+  position:absolute;width:1px;height:1px;
+  overflow:hidden;clip-path:inset(50%);white-space:nowrap;
+}
+.pular{
+  position:absolute;left:var(--e3);top:-60px;z-index:60;
+  background:var(--cor-superficie);color:var(--cor-roxo);
+  border:1px solid var(--cor-roxo);border-radius:var(--raio-1);
+  padding:var(--e2) var(--e3);font-weight:500;text-decoration:none;
+  transition:top var(--mov);
+}
+.pular:focus{top:var(--e3)}
+
+/* ══════════ CABEÇALHO ══════════ */
+.topo{
+  background:linear-gradient(135deg,var(--cor-roxo) 0%,var(--cor-roxo-escuro) 100%);
+  color:var(--cor-texto-inverso);
+  padding:var(--e4) var(--e8);
+  display:flex;align-items:center;justify-content:space-between;gap:var(--e6);
+}
+.topo h1{font-size:19px;font-weight:700;line-height:1.2}
+.topo-sub{font-size:12.5px;opacity:.75;margin-top:2px;min-height:19px}
+.topo-dir{display:flex;align-items:center;gap:var(--e4)}
+.topo-usuario{text-align:right;line-height:1.3}
+.topo-usuario .nome{font-family:var(--fonte-titulo);font-weight:600;font-size:13px}
+.topo-usuario .papel{font-size:11.5px;opacity:.7}
+.btn-topo{
+  height:32px;padding:0 var(--e3);
+  border-radius:var(--raio-1);
+  border:1px solid rgba(255,255,255,.28);
+  color:var(--cor-texto-inverso);
+  font-size:12.5px;font-weight:500;
+  display:inline-flex;align-items:center;gap:var(--e1);
+  transition:background var(--mov);
+}
+.btn-topo:hover{background:rgba(255,255,255,.14)}
+.btn-topo:disabled{opacity:.5;cursor:progress}
+.logo-ocn{height:26px;width:auto;display:block;margin-left:var(--e2)}
+
+/* ══════════ CORPO ══════════ */
+.corpo{padding:var(--e6) var(--e8) var(--e12);max-width:1440px;margin:0 auto}
+
+/* ── tarja de aviso ── */
+.tarja{
+  display:flex;align-items:flex-start;gap:var(--e3);
+  background:var(--cor-ambar-fundo);
+  border:1px solid var(--cor-ambar);
+  color:var(--cor-ambar);
+  border-radius:var(--raio-2);
+  padding:var(--e3) var(--e4);
+  margin-bottom:var(--e4);
+  font-size:13px;
+}
+.tarja svg{flex:none;margin-top:1px}
+.tarja b{font-family:var(--fonte-titulo);font-weight:600}
+
+/* ── cartões de resumo ── */
+.resumo{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+  gap:var(--e3);
+  margin-bottom:var(--e4);
+}
+.cartao{
+  background:var(--cor-superficie);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-2);
+  padding:var(--e3) var(--e4);
+  text-align:left;display:block;
+  transition:border-color var(--mov),background var(--mov);
+}
+.cartao:hover{border-color:var(--cor-borda-forte)}
+.cartao .rotulo{
+  font-size:11.5px;font-weight:500;
+  color:var(--cor-texto-fraco);
+  text-transform:uppercase;letter-spacing:.04em;
+  display:flex;align-items:center;gap:var(--e1);
+}
+.cartao .valor{font-family:var(--fonte-titulo);font-size:26px;font-weight:700;line-height:1.15;margin-top:var(--e1);display:block}
+.cartao .ponto{width:7px;height:7px;border-radius:var(--raio-pill);flex:none}
+.cartao[aria-pressed="true"]{background:var(--cor-roxo-fraco);border-color:var(--cor-roxo)}
+.cartao[aria-pressed="true"] .valor{color:var(--cor-roxo)}
+.ponto-total{background:var(--cor-cinza)}
+.ponto-alugados{background:var(--cor-vermelho)}
+.ponto-disponiveis{background:var(--cor-verde)}
+.ponto-oficina{background:var(--cor-lilas)}
+.ponto-preparacao{background:var(--cor-ambar)}
+.ponto-atribuidos{background:var(--cor-azul)}
+.ponto-outros{background:var(--cor-preto)}
+
+/* ── barra de ferramentas ── */
+.ferramentas{
+  background:var(--cor-superficie);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-2);
+  padding:var(--e3);
+  display:flex;flex-wrap:wrap;align-items:center;gap:var(--e2);
+  margin-bottom:var(--e3);
+}
+.busca{position:relative;flex:1 1 260px;min-width:220px}
+.busca .lupa{position:absolute;left:var(--e3);top:50%;transform:translateY(-50%);color:var(--cor-texto-fraco);display:flex}
+.busca input{
+  width:100%;height:36px;
+  padding:0 var(--e12) 0 var(--e8);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-1);
+  background:var(--cor-superficie);
+}
+.busca input::placeholder{color:var(--cor-texto-fraco)}
+.atalho{
+  position:absolute;right:var(--e2);top:50%;transform:translateY(-50%);
+  font-family:var(--fonte-mono);font-size:11px;
+  color:var(--cor-texto-fraco);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-1);
+  padding:1px var(--e2);
+  pointer-events:none;
+}
+.campo{
+  height:36px;padding:0 var(--e6) 0 var(--e3);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-1);
+  background:var(--cor-superficie);
+  appearance:none;max-width:210px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364607A' stroke-width='2' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right var(--e2) center;
+}
+.btn{
+  height:36px;padding:0 var(--e3);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-1);
+  background:var(--cor-superficie);
+  font-size:13px;font-weight:500;
+  display:inline-flex;align-items:center;gap:var(--e2);
+  transition:border-color var(--mov),background var(--mov);
+}
+.btn:hover{border-color:var(--cor-borda-forte);background:var(--cor-fundo)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn-principal{background:var(--cor-roxo);border-color:var(--cor-roxo);color:var(--cor-texto-inverso)}
+.btn-principal:hover{background:var(--cor-roxo-forte);border-color:var(--cor-roxo-forte)}
+.btn-perigo{color:var(--cor-vermelho)}
+.btn-perigo:hover{border-color:var(--cor-vermelho)}
+.espacador{flex:1}
+.densidade{display:inline-flex;border:1px solid var(--cor-borda);border-radius:var(--raio-1);overflow:hidden}
+.densidade button{height:36px;padding:0 var(--e3);font-size:12.5px;font-weight:500;color:var(--cor-texto-fraco)}
+.densidade button[aria-pressed="true"]{background:var(--cor-roxo-fraco);color:var(--cor-roxo)}
+.mais-filtros{
+  display:flex;flex-wrap:wrap;gap:var(--e2);
+  width:100%;padding-top:var(--e3);
+  border-top:1px solid var(--cor-borda);
+}
+
+/* ── chips de filtro ── */
+.filtros-ativos{display:flex;flex-wrap:wrap;align-items:center;gap:var(--e2);margin-bottom:var(--e3)}
+.contador{font-size:13px;color:var(--cor-texto-fraco)}
+.contador b{font-family:var(--fonte-titulo);font-weight:600;color:var(--cor-texto)}
+#chips{display:contents}
+.chip{
+  display:inline-flex;align-items:center;gap:var(--e1);
+  background:var(--cor-roxo-fraco);color:var(--cor-roxo);
+  border:1px solid transparent;
+  border-radius:var(--raio-pill);
+  padding:var(--e1) var(--e2) var(--e1) var(--e3);
+  font-size:12.5px;font-weight:500;
+}
+.chip button{display:flex;opacity:.7}
+.chip button:hover{opacity:1}
+.limpar{font-size:12.5px;font-weight:500;color:var(--cor-texto-fraco);text-decoration:underline;text-underline-offset:2px}
+.limpar:hover{color:var(--cor-texto)}
+
+/* ── tabela ──
+   Sem contêiner de rolagem e sem overflow:hidden em volta: qualquer um dos dois
+   quebra o position:sticky do cabeçalho, que é uma das correções pedidas. Os
+   cantos arredondados saem das próprias células. */
+.painel{
+  background:var(--cor-superficie);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-2);
+}
+table{width:100%;border-collapse:separate;border-spacing:0}
+thead th{
+  position:sticky;top:0;z-index:2;
+  background:var(--cor-superficie);
+  text-align:left;
+  font-size:11.5px;font-weight:600;
+  color:var(--cor-texto-fraco);
+  text-transform:uppercase;letter-spacing:.04em;
+  padding:var(--e3);
+  border-bottom:1px solid var(--cor-borda);
+  white-space:nowrap;
+}
+thead th:first-child{border-top-left-radius:var(--raio-2)}
+thead th:last-child{border-top-right-radius:var(--raio-2)}
+thead th button{display:inline-flex;align-items:center;gap:var(--e1);color:inherit;font:inherit}
+thead th button:hover{color:var(--cor-texto)}
+thead th[aria-sort] button{color:var(--cor-roxo)}
+thead th .seta{display:inline-flex}
+tbody td{
+  padding:var(--e3);
+  border-bottom:1px solid var(--cor-borda);
+  vertical-align:middle;
+}
+.densidade-confortavel tbody td{padding:var(--e4) var(--e3)}
+tbody tr:last-child td{border-bottom:none}
+tbody tr:last-child td:first-child{border-bottom-left-radius:var(--raio-2)}
+tbody tr:last-child td:last-child{border-bottom-right-radius:var(--raio-2)}
+tbody tr.linha{cursor:pointer}
+tbody tr.linha:hover td{background:var(--cor-fundo)}
+tr.aberta td{background:var(--cor-roxo-fraco)}
+.celula-abrir{width:1%;white-space:nowrap}
+.placa{display:inline-flex;align-items:center;gap:var(--e2)}
+.placa .mono{font-weight:600;font-size:13px}
+.copiar{color:var(--cor-texto-fraco);opacity:0;display:inline-flex;transition:opacity var(--mov)}
+tr:hover .copiar,.copiar:focus-visible,.copiar.fixa,.copiar.copiado{opacity:1}
+.copiar:hover{color:var(--cor-roxo)}
+.copiar.copiado{color:var(--cor-verde)}
+.selo{
+  display:inline-flex;align-items:center;gap:var(--e1);
+  border-radius:var(--raio-pill);
+  padding:2px var(--e2);
+  font-size:12px;font-weight:500;
+  white-space:nowrap;
+}
+.s-verde{background:var(--cor-verde-fundo);color:var(--cor-verde)}
+.s-vermelho{background:var(--cor-vermelho-fundo);color:var(--cor-vermelho)}
+.s-ambar{background:var(--cor-ambar-fundo);color:var(--cor-ambar)}
+.s-azul{background:var(--cor-azul-fundo);color:var(--cor-azul)}
+.s-lilas{background:var(--cor-lilas-fundo);color:var(--cor-lilas)}
+.s-cinza{background:var(--cor-cinza-fundo);color:var(--cor-cinza)}
+.s-preto{background:var(--cor-preto-fundo);color:var(--cor-preto)}
+.abrir{color:var(--cor-texto-fraco);display:flex;padding:var(--e1)}
+.abrir:hover{color:var(--cor-roxo)}
+
+/* ── detalhe expandido ── */
+.celula-detalhe{padding:0;background:var(--cor-roxo-fraco)}
+.detalhe{background:var(--cor-roxo-fraco);padding:var(--e4) var(--e6) var(--e6)}
+.detalhe h3{font-size:13px;font-weight:600;margin-bottom:var(--e4);display:flex;align-items:center;gap:var(--e2)}
+.icone-linha{display:flex}
+.grade{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:var(--e4)}
+.campo-det .rot{font-size:11px;font-weight:500;color:var(--cor-texto-fraco);text-transform:uppercase;letter-spacing:.04em}
+.campo-det .val{margin-top:2px;display:flex;align-items:center;gap:var(--e2);word-break:break-word}
+.acoes-det{display:flex;flex-wrap:wrap;gap:var(--e2);margin-top:var(--e6);padding-top:var(--e4);border-top:1px solid var(--cor-borda-forte)}
+
+/* ── estados ── */
+.vazio{padding:var(--e12) var(--e6);text-align:center}
+.vazio .icone{
+  width:44px;height:44px;margin:0 auto var(--e4);
+  border-radius:var(--raio-pill);
+  background:var(--cor-fundo);
+  display:flex;align-items:center;justify-content:center;color:var(--cor-texto-fraco);
+}
+.vazio .icone-erro{background:var(--cor-vermelho-fundo);color:var(--cor-vermelho)}
+.vazio h3{font-size:15px;font-weight:600;margin-bottom:var(--e2)}
+.vazio p{font-size:13px;color:var(--cor-texto-fraco);margin-bottom:var(--e4);max-width:46ch;margin-inline:auto}
+.esqueleto{padding:var(--e3)}
+.esqueleto .barra{height:14px;border-radius:var(--raio-1);background:var(--cor-fundo);margin:var(--e3) 0}
+.esqueleto .barra:nth-child(2){width:92%}
+.esqueleto .barra:nth-child(3){width:96%}
+.esqueleto .barra:nth-child(4){width:88%}
+.esqueleto .barra:nth-child(5){width:94%}
+.esqueleto .barra:nth-child(6){width:70%}
+.esqueleto p{font-size:12.5px;padding:var(--e3) 0}
+
+/* ── entrada ── */
+.login{
+  min-height:100vh;background:var(--cor-fundo);
+  display:flex;align-items:center;justify-content:center;
+  padding:var(--e12) var(--e4);
+}
+.cartao-login{
+  width:100%;max-width:380px;
+  background:var(--cor-superficie);
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-2);
+  overflow:hidden;
+}
+.login-topo{
+  background:linear-gradient(135deg,var(--cor-roxo) 0%,var(--cor-roxo-escuro) 100%);
+  padding:var(--e6);text-align:center;
+}
+.login-topo img{height:30px;margin-bottom:var(--e3)}
+.login-topo h2{color:var(--cor-texto-inverso);font-size:17px;font-weight:700}
+.login-topo p{color:var(--cor-texto-inverso);opacity:.75;font-size:12.5px;margin-top:var(--e1)}
+.login-corpo{padding:var(--e6)}
+.rot-campo{display:block;font-size:12px;font-weight:500;color:var(--cor-texto-fraco);margin-bottom:var(--e1)}
+.entrada{
+  width:100%;height:40px;padding:0 var(--e3);
+  border:1px solid var(--cor-borda);border-radius:var(--raio-1);
+  margin-bottom:var(--e4);
+  background:var(--cor-superficie);
+}
+.btn-entrar{
+  width:100%;height:42px;
+  background:var(--cor-roxo);color:var(--cor-texto-inverso);
+  border-radius:var(--raio-1);
+  font-family:var(--fonte-titulo);font-weight:600;font-size:14px;
+  transition:background var(--mov);
+}
+.btn-entrar:hover{background:var(--cor-roxo-forte)}
+.btn-entrar:disabled{opacity:.7;cursor:progress}
+.erro-login{color:var(--cor-vermelho);font-size:12.5px;min-height:18px;margin-bottom:var(--e2);text-align:center}
+.ajuda-login{font-size:12px;color:var(--cor-texto-fraco);text-align:center;margin-top:var(--e4);line-height:1.5}
+
+/* ── painel do administrador ── */
+dialog{
+  border:1px solid var(--cor-borda);
+  border-radius:var(--raio-2);
+  background:var(--cor-superficie);
+  color:var(--cor-texto);
+  padding:0;width:min(680px,calc(100vw - var(--e8)));max-height:86vh;
+}
+dialog::backdrop{background:rgba(24,1,64,.45)}
+.admin-topo{
+  display:flex;align-items:center;justify-content:space-between;gap:var(--e4);
+  padding:var(--e4) var(--e6);border-bottom:1px solid var(--cor-borda);
+}
+.admin-topo h2{font-size:16px;font-weight:700}
+.admin-corpo{padding:var(--e6);overflow:auto;max-height:70vh}
+.admin-form{display:flex;flex-wrap:wrap;gap:var(--e2);margin-bottom:var(--e4)}
+.admin-form .entrada{margin-bottom:0;width:auto;flex:1 1 140px;height:36px}
+.admin-corpo table{margin-bottom:var(--e3)}
+.admin-corpo thead th{position:static}
+.acoes-usuario{display:flex;flex-wrap:wrap;gap:var(--e2)}
+.acoes-usuario .btn{height:30px;font-size:12px}
+#admin-msg{font-size:12.5px;min-height:19px}
+.diagnostico{
+  margin-top:var(--e4);padding-top:var(--e4);
+  border-top:1px solid var(--cor-borda);
+  font-size:12.5px;color:var(--cor-texto-fraco);
+}
+.diagnostico h3{font-size:12px;text-transform:uppercase;letter-spacing:.04em;margin-bottom:var(--e2)}
+
+/* ══════════ CELULAR ══════════ */
+@media (max-width:760px){
+  .topo,.corpo{padding-left:var(--e4);padding-right:var(--e4)}
+  .topo{flex-wrap:wrap;gap:var(--e3)}
+  .topo-usuario{display:none}
+  .campo{max-width:none;flex:1 1 140px}
+  .espacador{display:none}
+  .btn-exportar{flex:1 1 100%;justify-content:center}
+  thead{display:none}
+  tbody tr.linha{
+    display:block;position:relative;
+    border-bottom:1px solid var(--cor-borda);
+    padding:var(--e3);
+  }
+  tbody tr.linha td{display:flex;justify-content:space-between;gap:var(--e4);border:none;padding:var(--e1) 0}
+  tbody tr.linha td::before{
+    content:attr(data-rot);
+    font-size:11.5px;font-weight:500;color:var(--cor-texto-fraco);
+    text-transform:uppercase;letter-spacing:.04em;
+    flex:none;
+  }
+  tbody tr.linha .celula-abrir{position:absolute;top:var(--e2);right:var(--e2);width:auto;padding:0}
+  tbody tr.linha .celula-abrir::before{content:none}
+  tbody tr.linha-detalhe,.celula-detalhe{display:block}
+  .celula-detalhe::before{content:none}
+  .detalhe{padding:var(--e4)}
+  .copiar{opacity:1}
+}
+</style>
+</head>
+<body>
+
+<a class="pular" href="#busca">Pular para a busca</a>
+<div id="avisos" class="so-leitor" role="status" aria-live="polite"></div>
+
+<!-- ══════════════ A ENTRADA ══════════════ -->
+<div id="tela-login" class="login" hidden>
+  <div class="cartao-login">
+    <div class="login-topo">
+      <img src="img/ocn-logo-white.png" alt="OCN">
+      <h2>Frota</h2>
+      <p>Acesso restrito à equipe</p>
+    </div>
+    <form class="login-corpo" id="form-login" novalidate>
+      <label class="rot-campo" for="login-usuario">Usuário</label>
+      <input class="entrada" id="login-usuario" name="usuario" autocomplete="username" autocapitalize="none" spellcheck="false" required>
+      <label class="rot-campo" for="login-senha">Senha</label>
+      <input class="entrada" id="login-senha" name="senha" type="password" autocomplete="current-password" required>
+      <p class="erro-login" id="login-erro" role="alert"></p>
+      <button class="btn-entrar" id="login-entrar" type="submit">Entrar</button>
+      <p class="ajuda-login">Esqueceu a senha? Fale com um administrador —<br>ele redefine em dez segundos pelo painel.</p>
+    </form>
+  </div>
+</div>
+
+<!-- ══════════════ A TELA ══════════════ -->
+<div id="tela-app" hidden>
+
+  <header class="topo">
+    <div>
+      <h1>OCN Frota</h1>
+      <div class="topo-sub" id="topo-sub"></div>
+    </div>
+    <div class="topo-dir">
+      <div class="topo-usuario">
+        <div class="nome" id="topo-nome"></div>
+        <div class="papel" id="topo-papel"></div>
+      </div>
+      <button class="btn-topo" id="btn-atualizar" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>
+        Atualizar
+      </button>
+      <button class="btn-topo" id="btn-admin" type="button" hidden>
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6h.09A1.65 1.65 0 0 0 10.6 3.09V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        Admin
+      </button>
+      <button class="btn-topo" id="btn-sair" type="button">Sair</button>
+      <img class="logo-ocn" src="img/ocn-logo-white.png" alt="OCN">
+    </div>
+  </header>
+
+  <main class="corpo">
+
+    <div class="tarja" id="tarja" role="status" hidden>
+      <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m21.7 18-8-14a2 2 0 0 0-3.5 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.7-3z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+      <div id="tarja-texto"></div>
+    </div>
+
+    <div class="resumo" id="resumo"></div>
+
+    <div class="ferramentas">
+      <div class="busca">
+        <span class="lupa"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg></span>
+        <input id="busca" type="search" autocomplete="off" spellcheck="false"
+               placeholder="Buscar por placa, motorista, chassi ou modelo…"
+               aria-label="Buscar por placa, motorista, chassi ou modelo">
+        <span class="atalho" aria-hidden="true">/</span>
+      </div>
+      <select class="campo" id="f-status" aria-label="Filtrar por status"></select>
+      <select class="campo" id="f-fabricante" aria-label="Filtrar por fabricante"></select>
+      <select class="campo" id="f-modelo" aria-label="Filtrar por modelo"></select>
+      <select class="campo" id="f-cidade" aria-label="Filtrar por cidade"></select>
+      <button class="btn" id="btn-mais-filtros" type="button" aria-expanded="false" aria-controls="mais-filtros">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 5h18"/><path d="M7 12h10"/><path d="M10 19h4"/></svg>
+        Mais filtros
+      </button>
+      <div class="espacador"></div>
+      <div class="densidade" role="group" aria-label="Densidade das linhas">
+        <button id="dens-compacto" type="button" aria-pressed="true">Compacto</button>
+        <button id="dens-confortavel" type="button" aria-pressed="false">Confortável</button>
+      </div>
+      <button class="btn btn-principal btn-exportar" id="btn-exportar" type="button">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12"/><path d="m7 10 5 5 5-5"/><path d="M4 21h16"/></svg>
+        <span id="btn-exportar-texto">Exportar</span>
+      </button>
+      <div class="mais-filtros" id="mais-filtros" hidden>
+        <select class="campo" id="f-uf" aria-label="Filtrar por UF"></select>
+        <select class="campo" id="f-safra" aria-label="Filtrar por safra"></select>
+      </div>
+    </div>
+
+    <div class="filtros-ativos">
+      <span class="contador" id="contador" aria-live="polite"></span>
+      <span id="chips"></span>
+      <button class="limpar" id="btn-limpar" type="button" hidden>Limpar tudo</button>
+    </div>
+
+    <div class="painel" id="painel-tabela" hidden>
+      <table id="tabela" class="densidade-compacto">
+        <caption class="so-leitor">Veículos da frota. Use os botões do cabeçalho para ordenar e o botão de cada linha para abrir os detalhes.</caption>
+        <thead>
+          <tr>
+            <th data-col="placa" scope="col"><button type="button">Placa <span class="seta"></span></button></th>
+            <th data-col="modelo" scope="col"><button type="button">Modelo <span class="seta"></span></button></th>
+            <th data-col="fabricante" scope="col"><button type="button">Fabricante <span class="seta"></span></button></th>
+            <th data-col="cor" scope="col"><button type="button">Cor <span class="seta"></span></button></th>
+            <th data-col="motorista" scope="col"><button type="button">Motorista <span class="seta"></span></button></th>
+            <th data-col="cidade" scope="col"><button type="button">Cidade <span class="seta"></span></button></th>
+            <th data-col="status" scope="col"><button type="button">Status <span class="seta"></span></button></th>
+            <th scope="col"><span class="so-leitor">Detalhes</span></th>
+          </tr>
+        </thead>
+        <tbody id="tbody"></tbody>
+      </table>
+    </div>
+
+    <div class="painel" id="estado"></div>
+
+  </main>
+</div>
+
+<!-- ══════════════ PAINEL DO ADMINISTRADOR ══════════════ -->
+<dialog id="dlg-admin" aria-labelledby="admin-titulo">
+  <div class="admin-topo">
+    <h2 id="admin-titulo">Gerenciar usuários</h2>
+    <button class="btn" id="admin-fechar" type="button">Fechar</button>
+  </div>
+  <div class="admin-corpo">
+    <form class="admin-form" id="admin-form">
+      <input class="entrada" id="admin-usuario" placeholder="Usuário" autocomplete="off" autocapitalize="none" aria-label="Novo usuário">
+      <input class="entrada" id="admin-senha" type="password" placeholder="Senha" autocomplete="new-password" aria-label="Senha do novo usuário">
+      <select class="campo" id="admin-perfil" aria-label="Perfil do novo usuário">
+        <option value="false">Padrão</option>
+        <option value="true">Admin</option>
+      </select>
+      <button class="btn btn-principal" type="submit">Adicionar</button>
+    </form>
+    <table>
+      <thead>
+        <tr><th scope="col">Usuário</th><th scope="col">Perfil</th><th scope="col">Ações</th></tr>
+      </thead>
+      <tbody id="admin-tbody"></tbody>
+    </table>
+    <p id="admin-msg" role="status"></p>
+    <div class="diagnostico">
+      <h3>Diagnóstico da planilha</h3>
+      <div id="admin-diagnostico"></div>
+    </div>
+  </div>
+</dialog>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script type="module" src="app.js"></script>
+</body>
+</html>
