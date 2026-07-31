@@ -131,7 +131,6 @@ export const COLUNAS = {
   fabricante: { rotulo: 'Fabricante', apelidos: ['Fabricante', 'Marca'] },
   cor: { rotulo: 'Cor', apelidos: ['Cor'] },
   motorista: { rotulo: 'Motorista', apelidos: ['Nome do motorista', 'Motorista', 'Condutor'] },
-  cidade: { rotulo: 'Cidade', apelidos: ['Cidade Entrega', 'Cidade'] },
   status: { rotulo: 'Status', apelidos: null }   // sai de statusEfetivo
 };
 
@@ -603,8 +602,6 @@ function linhaDe(veiculo) {
   }
   const placa = valorDe(veiculo, 'Placa');
   const status = statusEfetivo(veiculo);
-  const cidade = valorDe(veiculo, 'Cidade Entrega', 'Cidade');
-  const uf = valorDe(veiculo, 'UF Entrega', 'UF');
 
   const tr = el('tr', {
     class: 'linha', 'data-placa': placa,
@@ -618,9 +615,6 @@ function linhaDe(veiculo) {
     el('td', { 'data-rot': 'Fabricante', text: valorDe(veiculo, 'Fabricante', 'Marca') || '—' }),
     el('td', { 'data-rot': 'Cor', text: valorDe(veiculo, 'Cor') || '—' }),
     el('td', { 'data-rot': 'Motorista', text: valorDe(veiculo, 'Nome do motorista', 'Motorista') || '—' }),
-    el('td', { 'data-rot': 'Cidade' },
-      document.createTextNode(cidade || '—'),
-      uf ? el('span', { class: 'fraco', text: ' ' + uf }) : null),
     el('td', { 'data-rot': 'Status' },
       el('span', { class: 'selo ' + classeStatus(status), text: status || '—' })),
     el('td', { class: 'celula-abrir' },
@@ -741,7 +735,7 @@ function detalheDe(veiculo) {
   );
 
   return el('tr', { class: 'linha-detalhe' },
-    el('td', { class: 'celula-detalhe', colspan: '8', id: 'detalhe-aberto' }, painel));
+    el('td', { class: 'celula-detalhe', colspan: '7', id: 'detalhe-aberto' }, painel));
 }
 
 function linkDo(placa) {
