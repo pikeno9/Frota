@@ -5,6 +5,9 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="robots" content="noindex, nofollow">
 <title>OCN Frota — Veículos</title>
+<link rel="icon" href="img/favicon.ico" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="img/favicon-32.png">
+<link rel="apple-touch-icon" sizes="180x180" href="img/favicon-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;600;700&family=Lexend+Deca:wght@300;400;500;600&display=swap">
@@ -283,7 +286,17 @@ input,select{font:inherit;color:inherit}
   border:1px solid var(--cor-borda);
   border-radius:var(--raio-2);
 }
-table{width:100%;border-collapse:separate;border-spacing:0}
+table{width:100%;border-collapse:separate;border-spacing:0;table-layout:fixed}
+/* As sete colunas dividem a linha inteira. Motorista e Modelo levam a maior
+   parte porque são os textos que crescem; a coluna do botão de abrir leva o
+   mínimo. Somam 100%. */
+.c-placa{width:13%}
+.c-modelo{width:19%}
+.c-fabricante{width:14%}
+.c-cor{width:10%}
+.c-motorista{width:23%}
+.c-status{width:17%}
+.c-abrir{width:4%}
 thead th{
   position:sticky;top:0;z-index:2;
   /* Roxo fraco: dá cor à tabela e deixa óbvio que a faixa que gruda no topo ao
@@ -307,7 +320,17 @@ tbody td{
   padding:var(--e3);
   border-bottom:1px solid var(--cor-borda);
   vertical-align:middle;
+  /* Com largura fixa, "VOLKSWAGEN" numa janela estreita não tem onde quebrar:
+     ou invade a coluna vizinha, ou racha no meio da palavra e a linha dobra de
+     altura. Numa lista de 170 linhas, altura irregular atrapalha mais do que
+     ajuda — então o texto que não cabe termina em reticências, e o valor
+     inteiro continua no title e no detalhe da linha. Em telas normais (1280px
+     não corta nada) isto nunca aparece. */
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
 }
+/* Menos a placa: ali o que passa da borda é o botão de copiar, que fica fora do
+   fluxo — cortá-lo deixaria meio ícone na tela. */
+tbody td:first-child{overflow:visible}
 .densidade-confortavel tbody td{padding:var(--e4) var(--e3)}
 tbody tr:last-child td{border-bottom:none}
 tbody tr:last-child td:first-child{border-bottom-left-radius:var(--raio-2)}
@@ -315,20 +338,44 @@ tbody tr:last-child td:last-child{border-bottom-right-radius:var(--raio-2)}
 tbody tr.linha{cursor:pointer}
 tbody tr.linha:hover td{background:var(--cor-fundo)}
 tr.aberta td{background:var(--cor-roxo-fraco)}
-.celula-abrir{width:1%;white-space:nowrap}
-.placa{display:inline-flex;align-items:center;gap:var(--e2)}
-.placa .mono{font-weight:600;font-size:13px}
+.celula-abrir{white-space:nowrap}
+.placa{display:inline-flex;align-items:center;position:relative}
+/* O botão de copiar fica invisível até passar o mouse, mas ocupava largura o
+   tempo todo — e numa janela de 800px era ele que empurrava a plaqueta para
+   fora da coluna. Fora do fluxo, ele não custa nada à largura da coluna e
+   aparece encostado na plaqueta na hora de usar. */
+.placa .copiar{position:absolute;left:100%;margin-left:var(--e1)}
+/* A placa é a chave que a equipe usa para tudo — copiar, buscar, mandar por
+   mensagem. Vira uma plaqueta: fundo da marca, letra espaçada como em placa de
+   verdade. Só ela tem fundo na linha, então a coluna se acha sozinha; o resto
+   da linha continua texto puro, sem competir. */
+.placa .mono{
+  font-weight:600;font-size:13px;letter-spacing:.06em;
+  background:var(--cor-roxo-fraco);
+  color:var(--cor-roxo);
+  border-radius:var(--raio-1);
+  padding:var(--e1) var(--e2);
+}
+/* Na linha aberta o fundo da linha já é roxo fraco: a plaqueta se inverte para
+   não sumir dentro dele. */
+tr.aberta .placa .mono{background:var(--cor-superficie)}
 .copiar{color:var(--cor-texto-fraco);opacity:0;display:inline-flex;transition:opacity var(--mov)}
 tr:hover .copiar,.copiar:focus-visible,.copiar.fixa,.copiar.copiado{opacity:1}
 .copiar:hover{color:var(--cor-roxo)}
 .copiar.copiado{color:var(--cor-verde)}
+/* O selo deixou de ser só texto pequeno: ganhou desenho, peso e contorno da
+   própria cor, para bater o olho e entender. O par texto-sobre-fundo é o mesmo
+   da spec (≥ 4,5:1); o contorno usa currentColor, então nunca desafina. */
 .selo{
   display:inline-flex;align-items:center;gap:var(--e1);
   border-radius:var(--raio-pill);
-  padding:2px var(--e2);
-  font-size:12px;font-weight:500;
+  padding:var(--e1) var(--e2);
+  font-size:12px;font-weight:600;
   white-space:nowrap;
+  border:1px solid currentColor;
+  max-width:100%;
 }
+.selo-icone{display:flex;flex:none}
 .s-verde{background:var(--cor-verde-fundo);color:var(--cor-verde)}
 .s-vermelho{background:var(--cor-vermelho-fundo);color:var(--cor-vermelho)}
 .s-ambar{background:var(--cor-ambar-fundo);color:var(--cor-ambar)}
@@ -448,12 +495,22 @@ dialog::backdrop{background:rgba(24,1,64,.45)}
   .espacador{display:none}
   .btn-exportar{flex:1 1 100%;justify-content:center}
   thead{display:none}
+  /* A linha vira cartão, então não existe mais coluna. Com a largura fixa de pé,
+     cada célula ficava com 22px úteis e o texto todo transbordava; e só soltar
+     `col{width:auto}` não basta — o colgroup continua estreitando a linha (medido:
+     221px de 341). Ele sai da conta inteiro. */
+  table{table-layout:auto}
+  colgroup{display:none}
   tbody tr.linha{
     display:block;position:relative;
     border-bottom:1px solid var(--cor-borda);
     padding:var(--e3);
   }
-  tbody tr.linha td{display:flex;justify-content:space-between;gap:var(--e4);border:none;padding:var(--e1) 0}
+  /* No cartão a coluna não aperta ninguém: o texto volta a caber inteiro. */
+  tbody tr.linha td{
+    display:flex;justify-content:space-between;gap:var(--e4);border:none;padding:var(--e1) 0;
+    white-space:normal;overflow:visible;text-overflow:clip;
+  }
   tbody tr.linha td::before{
     content:attr(data-rot);
     font-size:11.5px;font-weight:500;color:var(--cor-texto-fraco);
@@ -466,6 +523,9 @@ dialog::backdrop{background:rgba(24,1,64,.45)}
   .celula-detalhe::before{content:none}
   .detalhe{padding:var(--e4)}
   .copiar{opacity:1}
+  /* No cartão do celular não existe coluna para invadir: o botão volta ao fluxo,
+     senão ele sai pela borda direita do cartão. */
+  .placa .copiar{position:static;margin-left:var(--e1)}
 }
 </style>
 </head>
@@ -570,6 +630,17 @@ dialog::backdrop{background:rgba(24,1,64,.45)}
     <div class="painel" id="painel-tabela" hidden>
       <table id="tabela" class="densidade-compacto">
         <caption class="so-leitor">Veículos da frota. Use os botões do cabeçalho para ordenar e o botão de cada linha para abrir os detalhes.</caption>
+        <!-- Larguras declaradas: sem elas o navegador aperta as colunas curtas
+             à esquerda e deixa sobra à direita. Somam 100%. -->
+        <colgroup>
+          <col class="c-placa">
+          <col class="c-modelo">
+          <col class="c-fabricante">
+          <col class="c-cor">
+          <col class="c-motorista">
+          <col class="c-status">
+          <col class="c-abrir">
+        </colgroup>
         <thead>
           <tr>
             <th data-col="placa" scope="col"><button type="button">Placa <span class="seta"></span></button></th>

@@ -4,7 +4,7 @@ import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { join } from 'node:path';
 
-import { statusEfetivo, filtrar, ordenar, contar } from '../public/app.js';
+import { statusEfetivo, filtrar, ordenar, contar, iconeStatus } from '../public/app.js';
 
 const RAIZ = fileURLToPath(new URL('..', import.meta.url));
 const ler = (...p) => readFileSync(join(RAIZ, ...p), 'utf8');
@@ -318,6 +318,79 @@ test('nenhuma palavra em inglês sobrou na tela', () => {
   ];
   const achadas = ingles.filter(p => new RegExp(`\\b${p}\\b`).test(FRENTE));
   assert.deepEqual(achadas, [], `texto em inglês na tela: ${achadas.join(', ')}`);
+});
+
+// ══════════ iteração 3 — o que o dono pediu na segunda olhada ══════════
+
+test('as sete colunas dividem a linha inteira, sem sobra à direita', () => {
+  const estilo = HTML.match(/<style>([\s\S]*?)<\/style>/)[1];
+  assert.match(estilo, /table\{[^}]*table-layout:fixed/,
+    'sem largura fixa o navegador amontoa as colunas curtas e sobra espaço no fim');
+
+  const colunas = [...HTML.matchAll(/<col class="c-([a-z]+)">/g)].map(m => m[1]);
+  assert.equal(colunas.length, 7, 'uma largura declarada para cada uma das sete colunas');
+
+  const larguras = colunas.map(c => {
+    const m = estilo.match(new RegExp(`\\.c-${c}\\{width:(\\d+(?:\\.\\d+)?)%`));
+    assert.ok(m, `falta a largura da coluna ${c}`);
+    return Number(m[1]);
+  });
+  assert.equal(larguras.reduce((a, b) => a + b, 0), 100, `as larguras somam ${larguras.reduce((a, b) => a + b, 0)}%`);
+
+  /* No celular a tabela vira lista de cartões: as linhas viram blocos e as
+     larguras de coluna passam a esmagar as células (medido no navegador: 22px de
+     largura útil, com o texto todo transbordando; e, mesmo com table-layout:auto,
+     o colgroup ainda estreitava a linha para 221px de 341). O corte de 760px tem
+     que tirar os dois da frente. */
+  const celular = estilo.match(/@media \(max-width:\s*760px\)\{([\s\S]*)\}/);
+  assert.ok(celular, 'falta o bloco do celular');
+  assert.match(celular[1], /table-layout:auto/, 'o celular precisa desligar a largura fixa');
+  assert.match(celular[1], /colgroup\{display:none\}/, 'o celular precisa tirar o colgroup da conta');
+  assert.match(celular[1], /white-space:normal/, 'no cartão o texto volta a caber inteiro');
+
+  /* Cortar com reticências só é honesto se o valor inteiro continuar ao alcance:
+     o title devolve o que a coluna estreita escondeu. */
+  assert.match(estilo, /text-overflow:ellipsis/, 'a célula estreita precisa cortar com reticências');
+  assert.match(JS, /title: valor/, 'a célula cortada precisa guardar o valor inteiro no title');
+});
+
+test('o selo de status não depende só de cor: cada status tem o seu ícone', () => {
+  /* Quem não distingue vermelho de roxo precisa separar Alugado de Oficina
+     do mesmo jeito que todo mundo. O texto já estava lá; o desenho é a
+     terceira pista, para bater o olho e entender sem ler. */
+  const vistos = new Map();
+  for (const s of ['Alugado', 'Disponível', 'Oficina', 'Em preparação', 'Atribuído', 'Perda Total']) {
+    const icone = iconeStatus(s);
+    assert.ok(icone, `"${s}" ficou sem ícone`);
+    assert.ok(!vistos.has(icone), `"${s}" repete o ícone de "${vistos.get(icone)}"`);
+    vistos.set(icone, s);
+  }
+  assert.equal(iconeStatus(''), iconeStatus(undefined), 'status vazio não pode lançar');
+  assert.ok(iconeStatus('coisa que a planilha inventou'), 'status desconhecido também tem desenho');
+
+  for (const chaveIcone of [...vistos.keys(), iconeStatus('')]) {
+    assert.match(JS, new RegExp(`\\n\\s*${chaveIcone}:\\s*'`), `falta o desenho de "${chaveIcone}" no mapa ICONE`);
+  }
+});
+
+test('a placa ganha tratamento próprio, para se destacar das outras colunas', () => {
+  const estilo = HTML.match(/<style>([\s\S]*?)<\/style>/)[1];
+  const regra = estilo.match(/\.placa \.mono\{([^}]*)\}/);
+  assert.ok(regra, 'falta a regra da placa');
+  assert.match(regra[1], /background:var\(--cor-[a-z-]+\)/, 'a placa continua igual às outras colunas');
+  assert.match(regra[1], /border-radius:var\(--raio-[a-z0-9]+\)/, 'raio tem que sair de variável');
+});
+
+test('o favicon da OCN está ligado, no padrão do ocn-hub', () => {
+  const esperado = [
+    ['favicon.ico', /<link rel="icon" href="img\/favicon\.ico" sizes="any">/],
+    ['favicon-32.png', /<link rel="icon" type="image\/png" sizes="32x32" href="img\/favicon-32\.png">/],
+    ['favicon-180.png', /<link rel="apple-touch-icon" sizes="180x180" href="img\/favicon-180\.png">/]
+  ];
+  for (const [arquivo, padrao] of esperado) {
+    assert.match(HTML, padrao, `falta o <link> do ${arquivo}`);
+    assert.ok(existsSync(join(RAIZ, 'public', 'img', arquivo)), `public/img/${arquivo} não existe`);
+  }
 });
 
 test('mais cor: o roxo sai do cabeçalho e os cartões deixam de ser brancos', () => {

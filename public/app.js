@@ -98,6 +98,23 @@ export function classeStatus(status) {
   return 's-cinza';
 }
 
+/* O desenho de cada status, para o selo não se explicar só pela cor. Quem não
+   distingue vermelho de roxo tem que separar Alugado de Oficina como todo
+   mundo — e, para quem enxerga as duas, o desenho é o que faz bater o olho e
+   entender sem ler. Cada status tem o seu, sem repetição: dois status com o
+   mesmo ícone seriam a mesma armadilha da cor, só que com traço. */
+export function iconeStatus(status) {
+  const s = chave(status);
+  if (!s) return 'traco';
+  if (s.includes('disponiv')) return 'ok';
+  if (s.includes('alugado')) return 'chave';
+  if (s.includes('oficina') || s.includes('manutenc')) return 'ferramenta';
+  if (s.includes('prepara')) return 'relogio';
+  if (s.includes('atribuid')) return 'marcador';
+  if (s.includes('perda') || s.includes('sinistro')) return 'alerta';
+  return 'ponto';
+}
+
 const CAMPOS_BUSCA = [
   ['Placa'],
   ['Nome do motorista', 'Motorista', 'Condutor', 'Locatário'],
@@ -206,12 +223,29 @@ const ICONE = {
   carro: '<path d="M5 17h14l-1.5-5.5a2 2 0 0 0-1.9-1.5H8.4a2 2 0 0 0-1.9 1.5z"/><circle cx="7.5" cy="17.5" r="1.5"/><circle cx="16.5" cy="17.5" r="1.5"/>',
   elo: '<path d="M10 13a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1"/><path d="M14 11a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>',
   alerta: '<path d="M12 8v5"/><path d="M12 17h.01"/><circle cx="12" cy="12" r="9"/>',
-  fechar: '<path d="M18 6 6 18M6 6l12 12"/>'
+  fechar: '<path d="M18 6 6 18M6 6l12 12"/>',
+  /* Os desenhos dos status — ver iconeStatus(). Traço de 1.8 para o selo, que é
+     pequeno: no tamanho de 13px o traço fino some. */
+  chave: '<circle cx="8" cy="16" r="3.2"/><path d="m10.4 13.6 7.6-7.6"/><path d="m15 9 2 2"/><path d="m18 6 2 2"/>',
+  ferramenta: '<path d="M15.5 5.6a4.5 4.5 0 0 0 5.9 5.9l-8.4 8.4a2.4 2.4 0 0 1-3.4-3.4z"/><path d="m15.5 5.6 2.9-2.1"/>',
+  relogio: '<circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5l3 1.8"/>',
+  marcador: '<path d="M18.5 20.5 12 16l-6.5 4.5v-15a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2z"/>',
+  ponto: '<circle cx="12" cy="12" r="5.5"/>',
+  traco: '<path d="M6 12h12"/>'
 };
 
-function svg(caminho, tamanho = 15) {
+function svg(caminho, tamanho = 15, traco = 1.5) {
   return `<svg width="${tamanho}" height="${tamanho}" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${caminho}</svg>`;
+    stroke-width="${traco}" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${caminho}</svg>`;
+}
+
+/* Um selo, um lugar só: a linha da tabela e o detalhe do veículo desenham o
+   mesmo objeto — cor, desenho e texto. O texto continua sendo o que vale para
+   leitor de tela; o ícone é aria-hidden, decoração que informa quem enxerga. */
+function seloDe(valor) {
+  return el('span', { class: 'selo ' + classeStatus(valor) },
+    el('span', { class: 'selo-icone', html: svg(ICONE[iconeStatus(valor)], 13, 1.8) }),
+    document.createTextNode(valor || '—'));
 }
 
 /* Tudo que vem da planilha entra por textContent. Nome de motorista é dado de
@@ -594,6 +628,10 @@ function desenharCorpo() {
   $('tabela').className = 'densidade-' + estado.densidade;
 }
 
+function celulaTexto(rotulo, valor) {
+  return el('td', { 'data-rot': rotulo, text: valor || '—', title: valor || null });
+}
+
 function linhaDe(veiculo) {
   const guardada = cacheLinhas.get(veiculo);
   if (guardada) {
@@ -611,12 +649,13 @@ function linhaDe(veiculo) {
       el('span', { class: 'placa' },
         el('span', { class: 'mono', text: placa || '—' }),
         botaoCopiar(placa, `Copiar a placa ${placa}`))),
-    el('td', { 'data-rot': 'Modelo', text: valorDe(veiculo, 'Modelo') || '—' }),
-    el('td', { 'data-rot': 'Fabricante', text: valorDe(veiculo, 'Fabricante', 'Marca') || '—' }),
-    el('td', { 'data-rot': 'Cor', text: valorDe(veiculo, 'Cor') || '—' }),
-    el('td', { 'data-rot': 'Motorista', text: valorDe(veiculo, 'Nome do motorista', 'Motorista') || '—' }),
-    el('td', { 'data-rot': 'Status' },
-      el('span', { class: 'selo ' + classeStatus(status), text: status || '—' })),
+    /* O title guarda o valor inteiro: numa janela estreita a célula termina em
+       reticências, e o mouse parado em cima devolve o que foi cortado. */
+    celulaTexto('Modelo', valorDe(veiculo, 'Modelo')),
+    celulaTexto('Fabricante', valorDe(veiculo, 'Fabricante', 'Marca')),
+    celulaTexto('Cor', valorDe(veiculo, 'Cor')),
+    celulaTexto('Motorista', valorDe(veiculo, 'Nome do motorista', 'Motorista')),
+    el('td', { 'data-rot': 'Status' }, seloDe(status)),
     el('td', { class: 'celula-abrir' },
       el('button', {
         class: 'abrir', type: 'button',
@@ -706,7 +745,7 @@ function detalheDe(veiculo) {
     const valor = valorDe(veiculo, ...campo.apelidos);
     const caixa = el('div', { class: 'val' });
     if (campo.selo) {
-      caixa.append(el('span', { class: 'selo ' + classeStatus(valor), text: valor || '—' }));
+      caixa.append(seloDe(valor));
     } else {
       caixa.append(el('span', { class: campo.mono ? 'mono' : '', text: valor || '—' }));
     }
