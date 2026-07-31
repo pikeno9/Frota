@@ -66,7 +66,9 @@ export function interpretar(matriz) {
       if (p !== -1) { mapa[canon] = p; break; }
     }
   }
-  if (mapa['Placa'] === undefined) return vazio;
+  /* Não precisa checar mapa['Placa']: acharCabecalho só devolve uma linha que contenha
+     a célula "placa", então o mapeamento sempre existe aqui. Quem recusa uma leitura
+     sem Placa é o cache.js, que é o dono dessa decisão. */
 
   const colPlaca = mapa['Placa'];
   const veiculos = matriz.slice(idx + 1)

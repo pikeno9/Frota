@@ -8,11 +8,12 @@ import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 function avaliar(leitura) {
-  if (!leitura || leitura.linhaCabecalho == null) {
-    return 'não achei a linha do cabeçalho na planilha';
-  }
-  if (!leitura.colunasAchadas?.includes('Placa')) {
-    return 'não achei a coluna "Placa"';
+  /* Um portão só para "achei um cabeçalho utilizável". Separar em dois — "achei o
+     cabeçalho" e "tem coluna Placa" — seria redundante: veiculos.js só aceita como
+     cabeçalho uma linha que contenha "Placa", então o segundo nunca dispararia. Uma
+     condição, e uma mensagem que diz o que foi procurado e onde. */
+  if (!leitura || leitura.linhaCabecalho == null || !leitura.colunasAchadas?.includes('Placa')) {
+    return 'não achei nenhuma linha de cabeçalho com a coluna "Placa" nas primeiras 40 linhas da aba';
   }
   if (!leitura.veiculos?.length) {
     return 'a planilha voltou sem nenhum veículo';
