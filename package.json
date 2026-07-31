@@ -5,7 +5,8 @@
   "type": "module",
   "scripts": {
     "start": "node --experimental-sqlite servidor.js",
-    "test": "node --experimental-sqlite --test"
+    "test": "node --experimental-sqlite --test",
+    "importar-usuarios": "node --experimental-sqlite scripts/importar-usuarios.js"
   },
   "dependencies": {
     "express": "^4.19.2",
