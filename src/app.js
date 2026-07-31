@@ -19,8 +19,11 @@ function lerCookie(req, nome) {
   return null;
 }
 
-export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now }) {
+export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, confiarProxy = false }) {
   const app = express();
+  /* Atrás do proxy do Railway, req.ip só é o IP real do visitante com isto ligado.
+     Fica desligado por padrão para os testes locais não dependerem de cabeçalho. */
+  if (confiarProxy) app.set('trust proxy', 1);
   app.use(express.json());
 
   const tentativas = new Map();   // ip -> { contagem, desde }
