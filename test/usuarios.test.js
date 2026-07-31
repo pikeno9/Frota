@@ -47,6 +47,17 @@ test('o hash herdado vira scrypt no primeiro login certo', () => {
   limpar();
 });
 
+test('importarLegado reporta só quem realmente entrou, não quem foi ignorado por já existir', () => {
+  const { u, limpar } = novo();
+  u.importarLegado([{ usuario: 'enrico', senha_hash: hashLegado('x'), isAdmin: false, ativo: true }]);
+  const r = u.importarLegado([
+    { usuario: 'enrico', senha_hash: hashLegado('x'), isAdmin: false, ativo: true },  // já existe, é ignorado
+    { usuario: 'joao', senha_hash: hashLegado('y'), isAdmin: false, ativo: true }
+  ]);
+  assert.equal(r.importados, 1, 'só joao entrou de fato nesta chamada');
+  limpar();
+});
+
 test('usuário inativo não entra', () => {
   const { u, limpar } = novo();
   u.importarLegado([{ usuario: 'saiu', senha_hash: hashLegado('x'), isAdmin: false, ativo: false }]);

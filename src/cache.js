@@ -4,7 +4,7 @@
 // em branco. Aqui a ordem se inverte: a leitura ruim é registrada como problema
 // e a boa anterior continua sendo servida.
 
-import { readFileSync, writeFileSync, mkdirSync } from 'node:fs';
+import { readFileSync, writeFileSync, mkdirSync, renameSync } from 'node:fs';
 import { dirname } from 'node:path';
 
 function avaliar(leitura) {
@@ -28,14 +28,20 @@ export function criarCache({ arquivo, minutos = 5 }) {
   try {
     const salvo = JSON.parse(readFileSync(arquivo, 'utf8'));
     if (salvo?.veiculos?.length) ultimaBoa = salvo;
-  } catch {
-    // Sem arquivo, ilegível ou corrompido: começamos sem cópia. Não é erro fatal.
+  } catch (err) {
+    // Sem arquivo, ilegível ou corrompido: começamos sem cópia. Não é erro fatal,
+    // mas se o arquivo existe e está corrompido isso merece um sinal no log.
+    if (err.code !== 'ENOENT') {
+      console.error('Não consegui carregar a cópia de segurança:', err.message);
+    }
   }
 
   function persistir() {
     try {
       mkdirSync(dirname(arquivo), { recursive: true });
-      writeFileSync(arquivo, JSON.stringify(ultimaBoa));
+      const temporario = arquivo + '.tmp';
+      writeFileSync(temporario, JSON.stringify(ultimaBoa));
+      renameSync(temporario, arquivo);
     } catch (e) {
       console.error('Não consegui gravar a cópia de segurança:', e.message);
     }
@@ -67,6 +73,9 @@ export function criarCache({ arquivo, minutos = 5 }) {
       return !!ultimaBoa && (agora - ultimaBoa.lidoEm) < minutos * 60_000;
     },
     ultima() { return ultimaBoa; },
-    problema() { return problemaAtual; }
+    problema() { return problemaAtual; },
+    marcarProblema(motivo, agora) {
+      problemaAtual = problemaAtual ? { motivo, desde: problemaAtual.desde } : { motivo, desde: agora };
+    }
   };
 }

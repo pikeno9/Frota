@@ -14,7 +14,7 @@ const ALIASES = {
   'Modelo':            ['modelo'],
   'Cor':               ['cor'],
   'Ano Veículo':       ['ano veiculo', 'ano do veiculo', 'ano'],
-  'Ano Modelo':        ['ano modelo', 'ano do modelo', 'ano'],
+  'Ano Modelo':        ['ano modelo', 'ano do modelo'],
   'Nome do motorista': ['nome do motorista', 'motorista', 'condutor', 'locatario',
                         'nome do locatario', 'cliente'],
   'CPF':               ['cpf'],

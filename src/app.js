@@ -19,7 +19,7 @@ function lerCookie(req, nome) {
   return null;
 }
 
-export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, confiarProxy = false }) {
+export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, confiarProxy = false, cookieSeguro = false }) {
   const app = express();
   /* Atrás do proxy do Railway, req.ip só é o IP real do visitante com isto ligado.
      Fica desligado por padrão para os testes locais não dependerem de cabeçalho. */
@@ -27,6 +27,15 @@ export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, co
   app.use(express.json());
 
   const tentativas = new Map();   // ip -> { contagem, desde }
+
+  /* Sem isto, um IP que erra uma vez e nunca mais volta fica preso no Map para
+     sempre — é uma rota pública, então isso é um vazamento de memória de graça
+     para quem quiser martelar o /api/login. Varre tudo a cada escrita. */
+  function varrerExpirados() {
+    for (const [ip, t] of tentativas) {
+      if (agora() - t.desde > JANELA_TENTATIVAS) tentativas.delete(ip);
+    }
+  }
 
   function barrado(ip) {
     const t = tentativas.get(ip);
@@ -36,6 +45,7 @@ export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, co
   }
 
   function registrarErro(ip) {
+    varrerExpirados();
     const t = tentativas.get(ip);
     if (!t || agora() - t.desde > JANELA_TENTATIVAS) tentativas.set(ip, { contagem: 1, desde: agora() });
     else t.contagem++;
@@ -72,7 +82,7 @@ export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, co
     tentativas.delete(ip);
     const valor = sessao.assinar({ u: usuario, admin: r.admin }, agora() + OITO_HORAS);
     res.cookie(COOKIE, valor, {
-      httpOnly: true, sameSite: 'lax', secure: process.env.NODE_ENV === 'production', maxAge: OITO_HORAS
+      httpOnly: true, sameSite: 'lax', secure: cookieSeguro, maxAge: OITO_HORAS
     });
     res.json({ usuario, admin: r.admin });
   });
@@ -94,8 +104,9 @@ export function criarApp({ usuarios, sessao, cache, leitor, agora = Date.now, co
         await atualizar();
       } catch (e) {
         console.error('Falha ao ler a planilha:', e.message);
+        cache.marcarProblema('não consegui falar com o Google para ler a planilha', agora());
         if (!cache.ultima()) {
-          return res.status(503).json({ erro: 'Não consegui ler a planilha e não tenho cópia anterior. ' + e.message });
+          return res.status(503).json({ erro: 'Não consegui ler a planilha e não tenho cópia anterior.' });
         }
       }
     }

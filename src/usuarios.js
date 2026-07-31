@@ -4,6 +4,8 @@
 
 import { DatabaseSync } from 'node:sqlite';
 import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
+import { mkdirSync } from 'node:fs';
+import { dirname } from 'node:path';
 
 const SAL_LEGADO = 'lmfrotas_salt';
 
@@ -22,6 +24,9 @@ function confereScrypt(senha, guardado) {
 }
 
 export function criarUsuarios({ caminhoBanco }) {
+  // Sem isto, um caminho de volume mal montado falha com "unable to open database
+  // file" sem citar qual caminho — o primeiro tropeço no dia do deploy.
+  if (caminhoBanco !== ':memory:') mkdirSync(dirname(caminhoBanco), { recursive: true });
   const db = new DatabaseSync(caminhoBanco);
   db.exec(`
     CREATE TABLE IF NOT EXISTS usuarios (
@@ -87,10 +92,15 @@ export function criarUsuarios({ caminhoBanco }) {
       const ins = db.prepare(
         'INSERT OR IGNORE INTO usuarios (usuario, senha_hash, is_admin, ativo) VALUES (?, ?, ?, ?)'
       );
+      // INSERT OR IGNORE silenciosamente pula duplicatas — devolver linhas.length aqui
+      // mentiria pro dono da migração no momento de maior risco: ele leria "importei
+      // tudo" mesmo quando metade foi ignorada por já existir.
+      let importados = 0;
       for (const l of linhas) {
-        ins.run(l.usuario, l.senha_hash, l.isAdmin ? 1 : 0, l.ativo ? 1 : 0);
+        const r = ins.run(l.usuario, l.senha_hash, l.isAdmin ? 1 : 0, l.ativo ? 1 : 0);
+        importados += Number(r.changes);
       }
-      return { ok: true, importados: linhas.length };
+      return { ok: true, importados };
     },
 
     hashDe(usuario) { return buscar.get(usuario)?.senha_hash ?? null; },

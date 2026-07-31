@@ -68,6 +68,15 @@ test('linha em branco no meio não vira veículo fantasma', () => {
   assert.equal(interpretar(m).veiculos.length, 5);
 });
 
+test('coluna Ano única não pode preencher Ano Veículo e Ano Modelo ao mesmo tempo', () => {
+  const header = ['Placa', 'Fabricante', 'Modelo', 'Ano', 'Status'];
+  const m = [header, ['ABC1000', 'VOLKSWAGEN', 'Polo', '2020', 'Alugado']];
+  const r = interpretar(m);
+  assert.ok(r.colunasFaltando.includes('Ano Modelo'), 'Ano Modelo deve ser reportada como faltando');
+  assert.ok(!r.colunasFaltando.includes('Ano Veículo'), 'Ano Veículo é a que fica com a única coluna Ano');
+  assert.equal(r.veiculos[0]['Ano Veículo'], '2020');
+});
+
 test('sem coluna Placa devolve vazio, não lança', () => {
   const r = interpretar(planilha(['Frota', 'Modelo', 'Cor'], 3, 4));
   assert.equal(r.linhaCabecalho, null);
